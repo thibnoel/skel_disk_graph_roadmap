@@ -12,7 +12,10 @@ The skeleton is then sampled to place free-space bubbles which serve as the road
 - scipy
 
 # Getting started
-(TODO) Provide clear example scripts\
+(TODO) Provide clear example scripts:
+- Map preprocessing
+- Roadmap construction
+- Online demo ? (rosbag?)
 (TODO) detail usage in a real use-case
 
 # Cite this work
