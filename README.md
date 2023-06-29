@@ -6,10 +6,10 @@ The skeleton is then sampled to place free-space bubbles which serve as the road
 
 # Requirements
 - numpy
-- networkx
-- cv2
-- pqdict
-- scipy
+- networkx: graph data structures and generic methods
+- cv2: image processing (*dilation/erosion process*)
+- pqdict: priority queues 
+- scipy: distance computations
 
 # Getting started
 (TODO) Provide clear example scripts:
@@ -19,5 +19,5 @@ The skeleton is then sampled to place free-space bubbles which serve as the road
 (TODO) detail usage in a real use-case
 
 # Cite this work
-The code in this repo corresponds to the method presented in the following paper:
+The code in this repo corresponds to the method presented in the following paper (*currently under review*):
 > *Skeleton Disk-Graph Roadmap: a Sparse Deterministic Roadmap for Safe 2D Navigation and Exploration* - T.Noël, A.Lehuger, E.Marchand, F.Chaumette
