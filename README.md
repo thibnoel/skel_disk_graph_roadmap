@@ -1,8 +1,12 @@
 # skel_disk_graph_roadmap
 Python implementation of the Skeleton-Disk-Graph Roadmap (SDGRM) planner.
 
-The SDGRM planner is a deterministic roadmap, focused on safety and sparsity. Its principle is to rely on the occupancy data as input, computing the associated Signed Distance Field (SDF), from which a skeleton of the environment can be extracted.
+*Note: This repo is intended for usage as a [ROS](https://wiki.ros.org/) package, but the underlying code can easily be extracted and reused.*
+
+The SDGRM planner is a deterministic roadmap, focused on safety and sparsity. Its principle is to rely on the occupancy data as input, computing the associated Signed Distance Field (SDF), from which a skeleton of the environment can be extracted.\
 The skeleton is then sampled to place free-space bubbles which serve as the roadmap nodes; using such bubbles makes the distribution of the final roadmap nodes non-uniform and naturally adapted to local conditions (the nodes density is higher in areas of low SDF, i.e. close to the obstacles).
+
+![Overview of the method](figures/diagram_overview.png)
 
 # Requirements
 - numpy
