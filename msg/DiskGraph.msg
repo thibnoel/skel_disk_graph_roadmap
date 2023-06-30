@@ -1,7 +1,7 @@
 # Holds a graph 
-# - nodes: list of nodes, ie skeleton_disk_graph_roadmap/DiskGraphNode
+# - nodes: list of nodes, ie skel_disk_graph_roadmap/DiskGraphNode
 # - nodesIdsMapping: list of nodes indices in order
-# - edges: list of skeleton_disk_graph_roadmap/DiskGraphEdge
-skeleton_disk_graph_roadmap/DiskGraphNode[] nodes
+# - edges: list of skel_disk_graph_roadmap/DiskGraphEdge
+skel_disk_graph_roadmap/DiskGraphNode[] nodes
 int32[] nodesIdsMapping
-skeleton_disk_graph_roadmap/DiskGraphEdge[] edges
+skel_disk_graph_roadmap/DiskGraphEdge[] edges
