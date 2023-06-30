@@ -16,7 +16,7 @@ The skeleton is then sampled to place free-space bubbles which serve as the road
 - Map preprocessing
 - Roadmap construction
 - Online demo ? (rosbag?)
-(TODO) detail usage in a real use-case
+(TODO) detail usage in a real use-case (planning for nav)
 
 # Cite this work
 The code in this repo corresponds to the method presented in the following paper (*currently under review*):
