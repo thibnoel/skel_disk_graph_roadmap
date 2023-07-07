@@ -6,7 +6,7 @@ import time
 
 import matplotlib.pyplot as plt
 
-from map_processing.map_processing_utils import * 
+from extended_mapping.map_processing import * 
 from geometry_msgs.msg import Point
 from nav_msgs.msg import OccupancyGrid, MapMetaData
 from nav_msgs.srv import GetMap, GetMapResponse

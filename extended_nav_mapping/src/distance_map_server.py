@@ -7,8 +7,8 @@ import time
 import numpy as np
 import threading
 
-from map_processing.map_processing_utils import * #ROSEnvMapToArray, ROSOccMapToArray, EnvironmentMap
-from map_processing.flux_skeletons_utils import gradFlux, fluxToSkeletonMap
+from extended_mapping.map_processing import * #ROSEnvMapToArray, ROSOccMapToArray, EnvironmentMap
+from extended_mapping.flux_skeletons_utils import gradFlux, fluxToSkeletonMap
 from nav_msgs.msg import MapMetaData, OccupancyGrid
 from nav_msgs.srv import GetMap
 from geometry_msgs.msg import Twist, Vector3, Pose, PoseStamped, Point, Quaternion
