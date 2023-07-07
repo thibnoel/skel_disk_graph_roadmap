@@ -6,7 +6,8 @@ import time
 import rospy
 from sdg_roadmap.sdg_roadmap_utils import circularMask
 from sdg_roadmap.sdg_roadmap_strategy import *
-from map_processing.map_processing_utils import *
+from extended_mapping.map_processing import *
+from extended_mapping.ros_conversions import *
 import actionlib
 
 from actionlib_msgs.msg import GoalStatusArray, GoalID
@@ -16,7 +17,7 @@ from geometry_msgs.msg import Point
 from nav_msgs.srv import GetMap
 from ros_explore_navigation.msg import FollowPathAction, FollowPathGoal, FollowPathActionResult
 from ros_explore_navigation.srv import GetPathLengths
-from ros_explore_mapping.srv import GetDistance
+from extended_nav_mapping.srv import GetDistance
 from skeleton_disk_graph_roadmap.srv import GetDiskGraph
 
 from sdg_roadmap_server import SDGRoadmapServer
@@ -83,15 +84,15 @@ class SDGExplorationServer:
         start = self.sdg_roadmap_server.agent_pos_listener.get2DAgentPos()
         self.replan_pos.append(start)
         self.visualizer.publishReplanPosViz(self.replan_pos)
-        occ_map = EnvironmentMap.initFromRosEnvGridMapMsg(self.occ_map_proxy().map)
-        dist_map = EnvironmentMap.initFromRosEnvGridMapMsg(self.dist_map_proxy().distance)
+        occ_map = envMapFromRosEnvGridMapMsg(self.occ_map_proxy().map)
+        dist_map = envMapFromRosEnvGridMapMsg(self.dist_map_proxy().distance)
         frontiers_ids, frontiers_paths = self.sdg_roadmap_strategy.newGetValidFrontiers(start, occ_map, dist_map, self.search_dist_increment) #, self.min_frontier_unkn_ratio, unkn_range=self.unkn_occ_range, unkn_max_ratio=self.max_frontier_unkn_ratio)
         self.search_dist_pub.publish(self.sdg_roadmap_strategy.max_search_dist)
         return frontiers_ids, frontiers_paths
 
     def interruptOnInactiveTarget(self):
-        occ_map = EnvironmentMap.initFromRosEnvGridMapMsg(self.occ_map_proxy().map)
-        dist_map = EnvironmentMap.initFromRosEnvGridMapMsg(self.dist_map_proxy().distance)
+        occ_map = envMapFromRosEnvGridMapMsg(self.occ_map_proxy().map)
+        dist_map = envMapFromRosEnvGridMapMsg(self.dist_map_proxy().distance)
         if self.current_target_pos is not None :
             target_rad = dist_map.valueAt(self.current_target_pos)
             if target_rad < self.sdg_roadmap_server.sdg_planner.tuning_parameters.min_pbubbles_rad :
@@ -148,7 +149,7 @@ class SDGExplorationServer:
         if not len(frontiers_paths):
             return None
         dvalid_frontiers_ids, dvalid_frontiers_paths = self.sdg_roadmap_strategy.filterFrontiersByTravelDist(frontiers_ids, frontiers_paths)
-        occ_map = EnvironmentMap.initFromRosEnvGridMapMsg(self.occ_map_proxy().map)
+        occ_map = envMapFromRosEnvGridMapMsg(self.occ_map_proxy().map)
         
         path_costs = self.sdg_roadmap_strategy.getFrontiersPathsCosts(dvalid_frontiers_ids, dvalid_frontiers_paths, occ_map)
         best_path = self.sdg_roadmap_strategy.selectPath(dvalid_frontiers_paths, path_costs)

@@ -3,14 +3,15 @@
 
 import rospy
 from sdg_roadmap.sdg_roadmap_utils import *
-from map_processing.map_processing_utils import EnvironmentMap
+from extended_mapping.map_processing import EnvironmentMap
+from extended_mapping.ros_conversions import *
 from nav_utilities import agent_pos_listener
 
 from std_msgs.msg import Float64, Int32
 from std_srvs.srv import Empty, EmptyResponse
 from geometry_msgs.msg import Pose, PoseStamped
 from nav_msgs.msg import Path
-from ros_explore_mapping.srv import GetDistanceSkeleton
+from extended_nav_mapping.srv import GetDistanceSkeleton
 from skeleton_disk_graph_roadmap.msg import DiskGraph, DiskGraphNode, DiskGraphEdge
 from skeleton_disk_graph_roadmap.srv import PlanPath, PlanPathResponse, GetDiskGraph, GetDiskGraphResponse
 
@@ -55,11 +56,13 @@ class SDGRoadmapServer:
         # Call distance server proxy
         dist_data = self.distance_serv_proxy()
         # Extract maps data
-        dist_map = dist_data.distance
-        dist_skeleton = dist_data.skeleton
+        #dist_map = dist_data.distance
+        #dist_skeleton = dist_data.skeleton
         # Convert to corresponding env. maps
-        dist_map = EnvironmentMap.initFromRosEnvGridMapMsg(dist_map)
-        dist_skeleton = EnvironmentMap.initFromRosEnvGridMapMsg(dist_skeleton)
+        #dist_map = EnvironmentMap.initFromRosEnvGridMapMsg(dist_map)
+        dist_map = envMapFromRosEnvGridMapMsg(dist_data.distance)
+        #dist_skeleton = EnvironmentMap.initFromRosEnvGridMapMsg(dist_skeleton)
+        dist_skeleton = envMapFromRosEnvGridMapMsg(dist_data.skeleton)
         # Update planner accordingly
         '''
         # Submap extraction - maybe an option to speed up computations ? where ? when ?

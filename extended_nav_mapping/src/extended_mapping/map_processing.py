@@ -11,7 +11,6 @@ import numpy as np
 from scipy.spatial.distance import cdist
 from scipy.interpolate import interp2d
 from scipy.ndimage import distance_transform_edt
-from ros_conversions import *
 import matplotlib.pyplot as plt
 import cv2 as cv2
 

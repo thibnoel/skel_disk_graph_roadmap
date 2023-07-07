@@ -3,13 +3,13 @@
 
 import rospy
 from sdg_roadmap.sdg_roadmap_utils import *
-from map_processing.map_processing_utils import EnvironmentMap
+from extended_mapping.map_processing import EnvironmentMap
 from nav_utilities import agent_pos_listener
 
 from std_srvs.srv import Empty, EmptyResponse
 from geometry_msgs.msg import Point, Pose, PoseStamped
 from nav_msgs.msg import Path
-from ros_explore_mapping.srv import GetDistance
+from extended_nav_mapping.srv import GetDistance
 from skeleton_disk_graph_roadmap.msg import DiskGraph, DiskGraphNode, DiskGraphEdge
 from skeleton_disk_graph_roadmap.srv import PlanPath, PlanPathResponse
 from visualization_msgs.msg import Marker, MarkerArray

@@ -1,8 +1,10 @@
+import numpy as np
+from extended_mapping.map_processing import EnvironmentMap
+
 from ros_explore_mapping.msg import EnvironmentGridMap
 from std_msgs.msg import Header
 from geometry_msgs.msg import Vector3, Quaternion
 from nav_msgs.msg import MapMetaData
-
 
 def ROSEnvMapToArray(env_map_msg):
     """Extracts the data from a custom EnvironmentGridMap ROS message to a numpy array"""
