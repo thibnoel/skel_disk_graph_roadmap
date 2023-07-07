@@ -1,0 +1,5 @@
+# Occupancy map preprocessing server configuration
+occupancy_map_service: "rtabmap/get_map"
+subsampling: 1.
+dil_erosion_dist: 0.6
+obstacles_threshold: 0.51

@@ -1,0 +1,4 @@
+dist_server_node_name: "dist_server"
+map_frame: "map"
+#agent_frame: "corrected_base_link"
+agent_frame: "base_link"

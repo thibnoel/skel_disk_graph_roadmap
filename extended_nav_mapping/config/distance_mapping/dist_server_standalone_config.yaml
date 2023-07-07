@@ -1,0 +1,9 @@
+# Distance map server configuration
+
+#occupancy_map_service: "rtabmap/get_map"
+occupancy_map_service: "/occupancy_preprocessing/get_processed_binary_map"
+
+out_topics_name: "distance_map_server"
+distance_offset: 0.2
+skeleton_flux_threshold: -0.01
+update_rate: 2

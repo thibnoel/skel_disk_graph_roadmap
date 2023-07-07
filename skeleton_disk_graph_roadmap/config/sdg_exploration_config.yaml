@@ -1,0 +1,22 @@
+frame: "map"
+#agent_frame: "corrected_base_link"
+agent_frame: "base_link"
+dist_server_node_name: "dist_server"
+occ_map_service: "/occupancy_preprocessing/get_processed_map"
+
+sdg:
+  min_jbubbles_rad: 0.4
+  min_pbubbles_rad: 0.2
+  bubbles_dist_offset: 0.0
+  knn_checks: 20
+  path_subdiv_length: 0.2
+
+strategy:
+  min_frontier_unkn_ratio: 0
+  max_frontier_unkn_ratio: 0
+  unkn_occ_range: [40,60]
+  narrowness_cost_d_threshold: 0.
+  max_dist_compromise: 5
+  unknown_max_coverage: 0.3
+  frontiers_min_coverage: 0.
+  search_dist_increment: 1
