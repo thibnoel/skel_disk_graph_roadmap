@@ -1,7 +1,7 @@
 # skel_disk_graph_roadmap
 Python implementation of the Skeleton-Disk-Graph Roadmap (SDGRM) planner.
 
-*Note: This repo is intended for usage as a [ROS](https://wiki.ros.org/) package, but the underlying code can easily be extracted and reused.*
+*Note: This repo is intended for usage as a (actually two) [ROS](https://wiki.ros.org/) package, but the underlying code can easily be extracted and reused.*
 
 The SDGRM planner is a deterministic roadmap, focused on safety and sparsity. Its principle is to rely on the occupancy data as input, computing the associated Signed Distance Field (SDF), from which a skeleton of the environment can be extracted.\
 The skeleton is then sampled to place free-space bubbles which serve as the roadmap nodes; using such bubbles makes the distribution of the final roadmap nodes non-uniform and naturally adapted to local conditions (the nodes density is higher in areas of low SDF, i.e. close to the obstacles).
@@ -16,6 +16,12 @@ The skeleton is then sampled to place free-space bubbles which serve as the road
 - scipy: distance computations
 
 # Getting started
+The code is provided as two separate ROS packages:
+- [extended_nav_mapping](./extended_nav_mapping) provides tools to extend the ROS data structures for mapping and implements the preprocessing steps necessary to our method (distance and skeleton maps extraction).
+- [skeleton_disk_graph_roadmap](./skeleton_disk_graph_roadmap) provides the core implementation of the roadmap construction method as a ROS-agnostic python module, wrapped in a ROS package with additional nodes to use the method in a real experimental context. 
+
+Example configuration and launch files are also provided in both packages.
+
 (TODO) Provide clear example scripts:
 - Map preprocessing
 - Roadmap construction
