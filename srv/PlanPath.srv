@@ -1,5 +1,0 @@
-# World pos. to plan a path to (only x and y coordinates used)
-geometry_msgs/Point goal 
----
-# A feasible path to the goal
-nav_msgs/Path path

@@ -1,6 +1,0 @@
-<launch>
-    <node name="sdg_roadmap" pkg="skeleton_disk_graph_roadmap" type="sdg_exploration_server.py" output="screen">
-        <rosparam command="load" file="$(find skeleton_disk_graph_roadmap)/config/sdg_exploration_config.yaml"/>
-    </node>
-    <node name="sdg_viz" pkg="skeleton_disk_graph_roadmap" type="sdg_roadmap_visualizer.py"/>
-</launch>
