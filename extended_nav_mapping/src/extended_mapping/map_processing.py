@@ -8,29 +8,11 @@ General idea :
     - basis for a ROS node providing the in/out as service
 """
 import numpy as np
-from scipy.spatial.distance import cdist
-from scipy.interpolate import interp2d
-from scipy.ndimage import distance_transform_edt
 import matplotlib.pyplot as plt
 import cv2 as cv2
-
-
-def distancesPointToSet(point, points_set):
-    """
-    Computes the distances between a point and a set of points.
-
-    Args:
-        - point: 1-dimensionnal numpy array of shape (d,), where d is the dimension of the space in which the considered point is
-        - points_set: numpy array of shape (n, d)
-    
-    Returns:
-        A numpy array of shape (n,) containing the distances from point to each point in points_set 
-    """
-    if len(points_set) == 0:
-        return float('inf')
-    ref_point = point.reshape(1,-1)
-    return cdist(ref_point, points_set)[0]
-
+from scipy.interpolate import interp2d
+from scipy.ndimage import distance_transform_edt
+from extended_mapping.geom_processing import distancesPointToSet
 
 def imageToArray(img_path, transpose=False):
     """Reads an image file to a numpy array"""
@@ -42,29 +24,7 @@ def imageToArray(img_path, transpose=False):
 
 
 class EnvironmentMap:
-    """Data class for a generic 2D scalar map prepresenting the environment"""
-    # @staticmethod 
-    # def initFromRosOccMsg(env_map_msg):
-    #     """Initializes the map from a ROS OccupancyGrid message"""
-    #     env_map = EnvironmentMap(
-    #             env_map_msg.info.resolution,
-    #             [env_map_msg.info.width, env_map_msg.info.height],
-    #             [env_map_msg.info.origin.position.x, env_map_msg.info.origin.position.y]
-    #         )
-    #     env_map.setData(ROSOccMapToArray(env_map_msg))
-    #     return env_map
-
-    # @staticmethod 
-    # def initFromRosEnvGridMapMsg(env_map_msg):
-    #     """Initializes the map from a ROS custom EnvironmentGridMap message"""
-    #     env_map = EnvironmentMap(
-    #             env_map_msg.info.resolution,
-    #             [env_map_msg.info.width, env_map_msg.info.height],
-    #             [env_map_msg.info.origin.position.x, env_map_msg.info.origin.position.y]
-    #         )
-    #     env_map.setData(ROSEnvMapToArray(env_map_msg))
-    #     return env_map
-    
+    """Data class for a generic 2D scalar map prepresenting the environment"""    
     def __init__(self, resolution, dim, origin, data=None):
         """
         Initialization method
@@ -147,10 +107,10 @@ class EnvironmentMap:
             return self.data[pix_pos[0], pix_pos[1]]
         return float("nan")
 
-    def interpolateAt(self, world_pos):
+    def interpolateAt(self, world_pos_x, world_pos_y):
         """Gets the map data at a given world pos, by interpolating it"""
         interpolator = interp2d(self.origin[0] + self.resolution*np.array(range(self.dim[1])), self.origin[1] + self.resolution*np.array(range(self.dim[0])), self.data)
-        return interpolator(world_pos[0], world_pos[1])
+        return interpolator(world_pos_x, world_pos_y)
 
     def getExtent(self, transpose=False):
         """Returns the correct axis extent for visualization of the map using matplotlib"""

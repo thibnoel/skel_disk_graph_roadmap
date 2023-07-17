@@ -3,15 +3,6 @@ from extended_mapping.map_processing import *
 from skimage.morphology import thin
 
 
-def skeletonInBoundingBox(skeleton_dist_map, bounding_box_corners, mask=None):
-    submap = extractSubMap(skeleton_dist_map, bounding_box_corners[0], bounding_box_corners[1])
-    #print(submap.data)
-    #print(submap.dim)
-    if mask is not None:
-        submap[np.where(mask)] = None
-    return (submap.data < 0), submap
-
-
 def getNeihgborsCoord(pix_coord, include_diag=True):
     # Order : right, up, left, down
     i,j = pix_coord
