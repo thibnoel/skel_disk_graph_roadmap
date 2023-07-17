@@ -1,14 +1,13 @@
 from pqdict import pqdict
 from scipy.spatial import KDTree
 from scipy.spatial.distance import cdist
-from scipy.ndimage import convolve
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 import time
 from joblib import Parallel, delayed
 
-from map_processing.map_processing_utils import *
-from map_processing.flux_skeletons_utils import *
+from extended_mapping.map_processing import *
+from extended_mapping.flux_skeletons_utils import *
 from sdg_roadmap.graph_planner import *
 from nav_utilities.paths import WaypointsPath
 
@@ -393,9 +392,6 @@ def slow_circularMask(env_dim, center, radius):
 
 def circularMask(env_dim, center, radius):
     mask = np.zeros(env_dim, dtype=bool)
-    #row = 4
-    #col = 5
-    #radius = 5
     rr, cc = disk(center, radius, shape=env_dim)
     mask[rr, cc] = 1
     return mask
