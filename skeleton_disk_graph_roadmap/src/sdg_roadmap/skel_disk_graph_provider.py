@@ -11,18 +11,13 @@ from extended_mapping.geom_processing import *
 
 from sdg_roadmap.graph_planner import *
 from sdg_roadmap.sdg_base import *
-#from sdg_roadmap.paths_utils import WaypointsPath
+from sdg_roadmap.paths_utils import BubblesPath
 
 import json
 
 import numpy.ma as ma
-from skimage.draw import disk
 
-def circularMask(env_dim, center, radius):
-    mask = np.zeros(env_dim, dtype=bool)
-    rr, cc = disk(center, radius, shape=env_dim)
-    mask[rr, cc] = 1
-    return mask
+
 
 def bubblesMask(ref_env_map, bubbles, radInflationMult=1.0, radInflationAdd=0.0):
     """TODO: Docstring"""
@@ -127,8 +122,10 @@ class SkeletonDiskGraphProvider(GraphProvider):
         self.kd_tree = None
         self.parameters_dict = parameters_dict
 
+    ##############################
+    ### GRAPH CONSTRUCTION
 
-    def updateBubbleNodes(self, dist_map, skeleton_map, rad_pix_offset=2):
+    def computeUpdatedBubbleNodes(self, dist_map, skeleton_map, rad_pix_offset=2):
         """
         Update the current graph nodes
             Args:
@@ -153,7 +150,7 @@ class SkeletonDiskGraphProvider(GraphProvider):
         other_bubbles = extractBubblesFromSkel(joints_masked_skeleton_map, dist_map, self.parameters_dict["min_pbubbles_rad"], self.parameters_dict["bubbles_dist_offset"], from_skel_joints=False)
         return joints_bubbles + other_bubbles
 
-    def updateEdges(self, new_ids, dist_map, min_rad, res_tolerance=0):
+    def computeUpdatedEdges(self, new_ids, dist_map, min_rad, res_tolerance=0):
         """
         Update the current graph edges
         """
@@ -167,7 +164,6 @@ class SkeletonDiskGraphProvider(GraphProvider):
             for bid in neighbors_ids:
                 neighbor_b = self.graph.nodes[bid]['node_obj']
                 if bid != curr_id :
-                    #if curr_b.edgeValidityTo(neighbor_b, robot_rad):
                     if curr_b.betterEdgeValidityTo(neighbor_b, min_rad, dist_map, res_tolerance=res_tolerance):
                         new_edges.append([curr_b.id, bid])
             to_check.pop(0)
@@ -188,7 +184,7 @@ class SkeletonDiskGraphProvider(GraphProvider):
             self.removeNode(ind)
         # Compute missing bubbles
         t0_b = time.time()
-        skel_bubbles = self.updateBubbleNodes(new_dist_map, new_skeleton_map)
+        skel_bubbles = self.computeUpdatedBubbleNodes(new_dist_map, new_skeleton_map)
         new_ids = []
         for b in skel_bubbles:
             new_id = self.addNode(b)
@@ -198,7 +194,7 @@ class SkeletonDiskGraphProvider(GraphProvider):
         self.kd_tree = None
         # Compute new edges - TODO : update all edges costs separately
         t0_e = time.time()
-        skel_edges = self.updateEdges(new_ids, new_dist_map, self.parameters_dict["min_pbubbles_rad"], res_tolerance=res_tolerance)
+        skel_edges = self.computeUpdatedEdges(new_ids, new_dist_map, self.parameters_dict["min_pbubbles_rad"], res_tolerance=res_tolerance)
         for e in skel_edges:
             b0_pos = self.graph.nodes[e[0]]['node_obj'].pos
             b1_pos = self.graph.nodes[e[1]]['node_obj'].pos
@@ -214,6 +210,47 @@ class SkeletonDiskGraphProvider(GraphProvider):
 
         #print("Full graph update : {} s".format((t1_e - t0_e) + (t1_b - t0_b)))
         return modified_ids
+
+    ##############################
+    ### PATH PLANNING
+
+    def isGraphReachable(self, world_pos):
+        """Returns True if the given pos is reachable from one of the current graph bubbles, and the ID of the corresponding node"""
+        closest_ind = self.getClosestNodes(world_pos, k=self.parameters_dict["knn_checks"])
+        closest = [self.graph.nodes[i]["node_obj"] for i in closest_ind]
+        #closest = sorted(closest, reverse=False)
+        local_rad = self.cached_dist_map.valueAt(world_pos)
+        brads = np.array([c.bubble_rad for c in closest])
+        for k, cl in enumerate(closest):
+            if np.linalg.norm(cl.pos - world_pos) < brads[k] + local_rad:
+                return True, cl.id
+        return False, -1
+
+    def getWorldPath(self, world_start, world_goal):
+        """
+        Gets a path between a start and a goal world pos
+        Returns None if no path exists
+        """
+        start_reachable, start_id = self.isGraphReachable(world_start)
+        goal_reachable, goal_id = self.isGraphReachable(world_goal)
+        if not (start_reachable and goal_reachable):
+            return None
+        nodes_path, nodes_path_length = self.getPath(start_id, goal_id)
+        if nodes_path is None:
+            return None
+        #nodes_waypoints = [self.graph.nodes[ind]['node_obj'].pos for ind in nodes_path]
+        bubble_nodes = [self.graph.nodes[ind]['node_obj'] for ind in nodes_path]
+        node_start = BubbleNode(world_start, -1)
+        node_start.updateBubbleRad(self.cached_dist_map)
+        node_goal = BubbleNode(world_goal, -1)
+        node_goal.updateBubbleRad(self.cached_dist_map)
+        #nodes_waypoints = [world_start] + nodes_waypoints + [world_goal]
+        bubble_nodes = [node_start] + bubble_nodes + [node_goal]
+        #return WaypointsPath(nodes_waypoints)
+        return BubblesPath([b.pos for b in bubble_nodes], [b.bubble_rad for b in bubble_nodes])
+
+    ##############################
+    ### GRAPH VISUALIZATION
 
     def display(self, show_bubbles, show_nodes, show_edges, bcolor='blue', ecolor='blue', blw=1, elw=1, highlight_ids=[], highlight_color='red', nodes_color_dict=None):
         skel_bubbles = [self.graph.nodes[ind]['node_obj'] for ind in self.graph.nodes]

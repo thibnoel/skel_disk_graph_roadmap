@@ -1,6 +1,7 @@
 import numpy as np 
 import matplotlib.pyplot as plt 
 from scipy.spatial.distance import cdist
+from skimage.draw import disk
 
 def distancesPointToSet(point, points_set):
     """
