@@ -316,11 +316,18 @@ class BubblesPath(WaypointsPath):
         new_radii = [dist_map.valueAt(p) for p in spline_vals]
         return BubblesPath(spline_vals, new_radii)
 
-    def display(self, show_bubbles=True, cmap=None, color="green", blw=1):
+    def display(self, show_bubbles=True, cmap=None, color="green", blw=1, label=None):
         lcol = []
+        colors = []
         for k,bpos in enumerate(self.waypoints):
-            circ = plt.Circle(bpos, self.radii[k], ec=color, fc=(0,0,0,0), lw=blw)
-            plt.gca().add_patch(circ)
+            if cmap is not None:
+                color = cmap(k/(len(self.waypoints) - 1))
+            colors.append(color)
+            if show_bubbles:
+                circ = plt.Circle(bpos, self.radii[k], ec=color, fc=(0,0,0,0), lw=blw)
+                plt.gca().add_patch(circ)
             if k < len(self.waypoints) - 1:
                 lcol.append(np.array([bpos, self.waypoints[k+1]]))
-        plt.gca().add_collection(LineCollection(lcol, color=color))
+        if cmap is not None:
+            colors = [cmap(i/(len(lcol) - 1)) for i in range(len(lcol))]
+        plt.gca().add_collection(LineCollection(lcol, colors=colors, label=label))

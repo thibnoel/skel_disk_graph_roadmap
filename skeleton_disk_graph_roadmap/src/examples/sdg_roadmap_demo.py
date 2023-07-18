@@ -114,7 +114,7 @@ if __name__ == "__main__":
     skeleton_map = subsampled_map.copy()
     skeleton_map.setData(thin_flux.astype(int)*(dist_map.data > 0.2))
 
-    SHOW_MAP_PREPROC = False
+    SHOW_MAP_PREPROC = True
     # Display map processing steps
     if SHOW_MAP_PREPROC:
         plt.figure()
@@ -139,7 +139,6 @@ if __name__ == "__main__":
         plt.subplot(236)
         plt.title("Thin Skel.")
         skeleton_map.display(cmap=plt.cm.binary)
-        plt.show()
 
     sdg_construction_config = {
         "min_jbubbles_rad" : 0.6,
@@ -154,5 +153,32 @@ if __name__ == "__main__":
     ### Path planning
     world_start = [13,10]
     world_goal = [50,46]
+    path_subdiv_length = 0.5
 
     path = sdg_provider.getWorldPath(world_start, world_goal)
+    simplified_path = path.getSubdivized(int(path.getTotalLength()/path_subdiv_length), dist_map).getReducedBubbles()
+    spline_path = simplified_path.getSmoothedSpline(dist_map)
+
+    # Path planning visualization
+    SHOW_PATH_PLANNING = True
+    if SHOW_PATH_PLANNING:
+        plt.figure()
+        plt.subplot(121)
+        graph_color = 'blue'
+        env_map.display(cmap=plt.cm.binary)
+        sdg_provider.display(True, True, True, ecolor=graph_color, bcolor=graph_color)
+        plt.title("Roadmap Graph")
+        
+        plt.subplot(122)
+        path_cmap = None # plt.cm.viridis
+        path_color = 'red'
+        simplified_path_color = 'green'
+        spline_path_color = 'blue'
+        env_map.display(cmap=plt.cm.binary)
+        path.display(show_bubbles=True, color=path_color, cmap=path_cmap, label='Raw path')
+        simplified_path.display(show_bubbles=False, color=simplified_path_color, cmap=path_cmap, label='Minimal path')
+        spline_path.display(show_bubbles=False, color=spline_path_color, cmap=path_cmap, label='Spline path')
+        plt.legend()
+        plt.title("Path Planning")
+    
+    plt.show()
