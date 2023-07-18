@@ -2,7 +2,8 @@
 # -*- encoding: UTF-8 -*-
 
 import rospy
-from sdg_roadmap.sdg_roadmap_utils import *
+#from sdg_roadmap.sdg_roadmap_utils import *
+from sdg_roadmap.skel_disk_graph_provider import *
 from extended_mapping.map_processing import EnvironmentMap
 from extended_mapping.ros_conversions import *
 from nav_utilities import agent_pos_listener
@@ -30,54 +31,33 @@ class SDGRoadmapServer:
         self.graph_nodes_size_publisher = rospy.Publisher("~graph_size/nodes", Int32, queue_size=1, latch=True)
         self.graph_edges_size_publisher = rospy.Publisher("~graph_size/edges", Int32, queue_size=1, latch=True)
         # Services
-        self.path_planning_service = rospy.Service("~plan_path", PlanPath, self.pathPlanningCallback)
+        self.path_planning_service = rospy.Service("~plan_path", PlanPath, self.newPathPlanningCallback)
         self.updateService = rospy.Service("~update_planner", Empty, self.updatePlanner)
         self.disk_graph_service = rospy.Service("~get_disk_graph", GetDiskGraph, self.getDiskGraphServiceCallback)
         # Services proxies 
         self.distance_serv_proxy = rospy.ServiceProxy(dist_server_node_name+"/get_distance_skeleton", GetDistanceSkeleton)
 
         # Initialize planner
-        self.sdg_planner = SkeletonDiskGraph(sdg_tuning_param)
-        self.local_map_dim = [3,3]
+        #self.sdg_planner = SkeletonDiskGraph(sdg_tuning_param)
+        self.sdg_provider = SkeletonDiskGraphProvider(sdg_tuning_param_dict)
+        self.path_subdiv_length = sdg_tuning_param_dict["path_subdiv_length"]
 
-
-    def resetPlanner(self, sdg_tuning_param):
-        self.sdg_planner = SkeletonDiskGraph(sdg_tuning_param)
+    
+    # def resetPlanner(self, sdg_tuning_param_dict):
+    #     self.sdg_planner = SkeletonDiskGraph(sdg_tuning_param_dict)
+    
 
     def updatePlanner(self, req):
         """
         Queries new distance data and updates the planner accordingly
         """
-        
-        
-        curr_pos = self.agent_pos_listener.get2DAgentPos()
-
-
         # Call distance server proxy
         dist_data = self.distance_serv_proxy()
         # Extract maps data
-        #dist_map = dist_data.distance
-        #dist_skeleton = dist_data.skeleton
-        # Convert to corresponding env. maps
-        #dist_map = EnvironmentMap.initFromRosEnvGridMapMsg(dist_map)
         dist_map = envMapFromRosEnvGridMapMsg(dist_data.distance)
-        #dist_skeleton = EnvironmentMap.initFromRosEnvGridMapMsg(dist_skeleton)
         dist_skeleton = envMapFromRosEnvGridMapMsg(dist_data.skeleton)
         # Update planner accordingly
-        '''
-        # Submap extraction - maybe an option to speed up computations ? where ? when ?
-        dist_map = extractSubMap(
-            dist_map, 
-            [curr_pos[0] - 0.5*self.local_map_dim[0], curr_pos[1] - 0.5*self.local_map_dim[1]],
-            [curr_pos[0] + 0.5*self.local_map_dim[0], curr_pos[1] + 0.5*self.local_map_dim[1]]
-        )
-        dist_skeleton = extractSubMap(
-            dist_skeleton, 
-            [curr_pos[0] - 0.5*self.local_map_dim[0], curr_pos[1] - 0.5*self.local_map_dim[1]],
-            [curr_pos[0] + 0.5*self.local_map_dim[0], curr_pos[1] + 0.5*self.local_map_dim[1]]
-        )
-        '''
-        self.sdg_planner.updateOnDistMapUpdate(dist_map, dist_skeleton, distance_change_update_thresh=0., res_tolerance=dist_map.resolution)
+        self.sdg_provider.updateOnDistMapUpdate(dist_map, dist_skeleton, distance_change_update_thresh=0., res_tolerance=dist_map.resolution)
         self.publishDiskGraph()
         self.publishStats()
         rospy.loginfo("SDG planner updated")
@@ -87,11 +67,37 @@ class SDGRoadmapServer:
         """
         Publishes stats reflecting the planner state
         """
-        nodes_size = len(self.sdg_planner.graph.nodes)
-        edges_size = len(self.sdg_planner.graph.edges)
+        nodes_size = len(self.sdg_provider.graph.nodes)
+        edges_size = len(self.sdg_provider.graph.edges)
         self.graph_nodes_size_publisher.publish(Int32(nodes_size))
         self.graph_edges_size_publisher.publish(Int32(edges_size))
 
+
+    # def outdated_pathPlanningCallback(self, path_planning_request):
+    #     """
+    #     Computes and returns a feasible path on a new path planning request
+    #     """
+    #     self.updatePlanner(None)
+    #     start = self.agent_pos_listener.get2DAgentPos()
+    #     goal = np.array([path_planning_request.goal.x,
+    #                     path_planning_request.goal.y])
+    #     world_path = self.sdg_planner.getWorldPath(start, goal)
+    #     path, path_radii = world_path['postprocessed']['pos'], world_path['postprocessed']['radii']
+    #     reduced_path = self.sdg_planner.reduceBubblesPath(path, path_radii)
+    #     rospy.loginfo("Path planning - goal : [{},{}], found path : {}".format(
+    #         goal[0], goal[1], (path is not None)))
+    #     print("Got path - starting reduction")
+    #     if path is None:
+    #         return PlanPathResponse()
+    #     path = np.array(path)
+    #     #red_path = path
+    #     red_path = np.array(self.sdg_planner.reduceBubblesPath(path, path_radii))
+    #     red_path_radii = np.array([self.sdg_planner.cached_dist_map.valueAt(wp) for wp in red_path])
+    #     path_cpoints = computeSplineControlPoints(red_path, red_path_radii)
+    #     spline_path = computeSplinePath(path_cpoints)
+    #     red_path = spline_path.waypoints
+    #     print("Got reduced path")
+    #     return self.constructPathMsg(red_path)
 
     def pathPlanningCallback(self, path_planning_request):
         """
@@ -101,23 +107,14 @@ class SDGRoadmapServer:
         start = self.agent_pos_listener.get2DAgentPos()
         goal = np.array([path_planning_request.goal.x,
                         path_planning_request.goal.y])
-        world_path = self.sdg_planner.getWorldPath(start, goal)
-        path, path_radii = world_path['postprocessed']['pos'], world_path['postprocessed']['radii']
-        reduced_path = self.sdg_planner.reduceBubblesPath(path, path_radii)
-        rospy.loginfo("Path planning - goal : [{},{}], found path : {}".format(
-            goal[0], goal[1], (path is not None)))
-        print("Got path - starting reduction")
-        if path is None:
+        world_path = self.sdg_provider.getWorldPath(start, goal)
+        if world_path is None:
+            rospy.logwarn("Planning failed")
             return PlanPathResponse()
-        path = np.array(path)
-        #red_path = path
-        red_path = np.array(self.sdg_planner.reduceBubblesPath(path, path_radii))
-        red_path_radii = np.array([self.sdg_planner.cached_dist_map.valueAt(wp) for wp in red_path])
-        path_cpoints = computeSplineControlPoints(red_path, red_path_radii)
-        spline_path = computeSplinePath(path_cpoints)
-        red_path = spline_path.waypoints
-        print("Got reduced path")
-        return self.constructPathMsg(red_path)
+        simplified_path = world_path.getSubdivized(int(world_path.getTotalLength()/self.path_subdiv_length), self.sdg_provider.cached_dist_map).getReducedBubbles()
+        spline_path = simplified_path.getSmoothedSpline(self.sdg_provider.cached_dist_map)
+        rospy.loginfo("Planning succesful")
+        return self.constructPathMsg(spline_path.waypoints)
 
     def getDiskGraphServiceCallback(self, req):
         response = GetDiskGraphResponse()
@@ -154,14 +151,14 @@ class SDGRoadmapServer:
 
     def constructGraphMsg(self):
         """Builds and returns a skeleton_disk_graph_roadmap.msg/DiskGraph message representing the current graph state"""
-        if not len(self.sdg_planner.graph.nodes):
+        if not len(self.sdg_provider.graph.nodes):
             return
         else:
             graph_msg = DiskGraph()
-            graph_msg.nodesIdsMapping = self.sdg_planner.nodes_ids
+            graph_msg.nodesIdsMapping = self.sdg_provider.nodes_ids
             graph_msg_nodes = []
-            nodes = [self.sdg_planner.graph.nodes[nid]["node_obj"]
-                     for nid in self.sdg_planner.nodes_ids]
+            nodes = [self.sdg_provider.graph.nodes[nid]["node_obj"]
+                     for nid in self.sdg_provider.nodes_ids]
             #adj_matrix = np.zeros([len(nodes), len(nodes)], int)
             for node in nodes:
                 graph_node = DiskGraphNode(
@@ -169,7 +166,7 @@ class SDGRoadmapServer:
                 graph_msg_nodes.append(graph_node)
 
             graph_msg_edges = []
-            for e in self.sdg_planner.graph.edges:
+            for e in self.sdg_provider.graph.edges:
                 edge = DiskGraphEdge(e[0], e[1])
                 graph_msg_edges.append(edge)
             graph_msg.edges = list(graph_msg_edges)
@@ -202,8 +199,8 @@ if __name__ == '__main__':
         "knn_checks" : rospy.get_param("~sdg/knn_checks",40),
         "path_subdiv_length" : rospy.get_param("~sdg/path_subdiv_length",0.4)
     }
-    sdg_tuning_param = SkeletonDiskGraphTuningParameters(sdg_tuning_param_dict)
-    sdg_roadmap = SDGRoadmapServer(dist_server_node_name, map_frame, agent_frame, sdg_tuning_param)
+    #sdg_tuning_param = SkeletonDiskGraphTuningParameters(sdg_tuning_param_dict)
+    sdg_roadmap = SDGRoadmapServer(dist_server_node_name, map_frame, agent_frame, sdg_tuning_param_dict)
     rospy.wait_for_service(dist_server_node_name + "/get_distance_skeleton")
 
     while not rospy.is_shutdown():

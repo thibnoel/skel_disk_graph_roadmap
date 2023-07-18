@@ -142,9 +142,9 @@ class SkeletonDiskGraphProvider(GraphProvider):
             masked_skeleton_map.setData(masked_skeleton_map.data*(1 - curr_nodes_mask))
         # Joints bubbles pass
         joints_bubbles = extractBubblesFromSkel(masked_skeleton_map, dist_map, self.parameters_dict["min_jbubbles_rad"], self.parameters_dict["bubbles_dist_offset"], from_skel_joints=True)
+        joints_masked_skeleton_map = masked_skeleton_map.copy()  
         if len(joints_bubbles):
-            joints_bubbles_mask = bubblesMask(masked_skeleton_map, joints_bubbles, radInflationAdd=-rad_pix_offset)
-            joints_masked_skeleton_map = masked_skeleton_map.copy()    
+            joints_bubbles_mask = bubblesMask(masked_skeleton_map, joints_bubbles, radInflationAdd=-rad_pix_offset)      
             joints_masked_skeleton_map.setData(masked_skeleton_map.data*(1 - joints_bubbles_mask))    
         # Second pass
         other_bubbles = extractBubblesFromSkel(joints_masked_skeleton_map, dist_map, self.parameters_dict["min_pbubbles_rad"], self.parameters_dict["bubbles_dist_offset"], from_skel_joints=False)

@@ -7,7 +7,7 @@ class WaypointsPath:
     """Class representing a 2D path by a list of waypoints"""
 
     def __init__(self, waypoints):
-        "Initialization"
+        """Initialization"""
         self.waypoints = np.array(waypoints)
         # Compute the sub paths lengths
         curr_waypoints = self.waypoints[:-1, :]
@@ -30,6 +30,7 @@ class WaypointsPath:
         return WaypointsPath(self.waypoints)
 
     def getTotalLength(self):
+        """Returns the total length of the path"""
         return np.sum(self.lengths)
 
     def getWpIndexAt(self, t):
@@ -46,6 +47,7 @@ class WaypointsPath:
         return wp_index
 
     def getPosAt(self, t):
+        """Gets the pos t, linearly interpolated along the path between the start (t=0) and end (t=1)"""
         if t <= 0:
             return self.waypoints[0]
         if t >= 1:
@@ -91,6 +93,7 @@ class WaypointsPath:
         return self.getCurvatureAtInd(ind)
 
     def getNearestPoint(self, pos):
+        """Computes the closest point on the path to a given pos"""
         segments = [[self.waypoints[i], self.waypoints[i+1]]
                     for i in range(len(self.waypoints) - 1)]
         global_min = float('inf')
@@ -109,6 +112,7 @@ class WaypointsPath:
         return closest_point, t_on_path
 
     def getSubdivized(self, n_subdivisions):
+        """Returns the same path subdivized in the desired number of sudivisions"""
         subd_waypoints = []
         for k in range(n_subdivisions):
             t = 1.0*k/(n_subdivisions-1)
@@ -116,6 +120,7 @@ class WaypointsPath:
         subdPath = WaypointsPath(np.array(subd_waypoints))
         return subdPath
 
+    '''
     def simplifyToMinimalLines(self, costMap, mapOrigin, mapRes, costThresh, show=False):
         def maxCostBetween(startPos, endPos, lineRes):
             # Returns the max cost encountered between parent and node
@@ -166,6 +171,7 @@ class WaypointsPath:
 
         print("Path simplification solved - {} lines remaining".format(lines_count))
         return WaypointsPath(np.array(new_waypoints))
+    '''
 
     def computeDthetaList(self, init_theta=0):
         # Modif dtheta_list indexing to match redaction
@@ -217,6 +223,7 @@ class BubblesPath(WaypointsPath):
 
 
     def getSubdivized(self, n_subdivisions, dist_map):
+        """Returns the same path subdivized in the desired number of sudivisions"""
         subd_waypoints = []
         for k in range(n_subdivisions):
             t = 1.0*k/(n_subdivisions-1)
