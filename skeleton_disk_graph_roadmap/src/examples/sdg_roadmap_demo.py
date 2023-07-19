@@ -186,19 +186,24 @@ if __name__ == "__main__":
     source_pos = np.array([42,18])
     map_unkn_range = [0.04, 0.1]
     frontier_known_threhsold = 0.5 # ratio of known space to total surface covered by a bubble to be considered known
-    search_dist_increment = 10
+    search_dist_increment = 100
+    path_cost_param = {
+        "energy_penalty": -1,
+        "coverage_reward": 0.5
+    }
 
-    frontiers_ids, frontiers_pos = sdg_provider.searchClosestFrontiers(source_pos, env_map, map_unkn_range, frontier_known_threhsold, search_dist_increment)
+    exploration_provider = SDGExplorationPathProvider(sdg_provider, map_unkn_range, frontier_known_threhsold, search_dist_increment)
+    frontiers_paths = exploration_provider.getFrontiersPaths(source_pos, env_map)
+    best_path = exploration_provider.selectExplorationPath(frontiers_paths, path_cost_param)
 
     SHOW_FRONTIERS_EXTRACTIION = True
     if SHOW_FRONTIERS_EXTRACTIION:
         plt.figure()
         plt.title("Frontiers extraction")
-        graph_color = 'blue'
         env_map.display(cmap=plt.cm.binary)
-        sdg_provider.display(True, True, True, ecolor=graph_color, bcolor=graph_color)
-        frontiers_pos = np.array(frontiers_pos)
-        plt.scatter(frontiers_pos[:,0], frontiers_pos[:,1], color='red')
-
+        length_cost_cmap = plt.cm.winter
+        for path_id in frontiers_paths:
+            frontiers_paths[path_id]['path'].display(show_bubbles=False, color=length_cost_cmap(frontiers_paths[path_id]['costs']['energy_penalty']))
+        best_path['path'].display(show_bubbles=False, color='red', lw=3)
 
     plt.show()

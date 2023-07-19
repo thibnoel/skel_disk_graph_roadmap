@@ -6,6 +6,7 @@ from sdg_roadmap.sdg_base import *
 
 
 class BubblesPath(WaypointsPath):
+    """Extension of the WaypointsPath class to represent the waypoints as free-space bubbles"""
     """MISSING SOME PROPER CUSTOM METHODS TO ADAPT BUBBLES RAD. WHEN WAYPOINTS ARE MODIFIED"""
     def __init__(self, bubbles_pos, radii):
         WaypointsPath.__init__(self, bubbles_pos)
@@ -13,6 +14,14 @@ class BubblesPath(WaypointsPath):
 
     def getAsWaypointsPath(self):
         return WaypointsPath(self.waypoints)
+
+    def getAsBubblesList(self):
+        bubbles = []
+        for k, pn in enumerate(self.waypoints):
+            bnode = BubbleNode(pn, k)
+            bnode.setBubbleRad(self.radii[k])
+            bubbles.append(bnode)
+        return bubbles
 
     @staticmethod
     def initFromWaypointsPath(waypoints_path, dist_map):
@@ -121,7 +130,7 @@ class BubblesPath(WaypointsPath):
         new_radii = [dist_map.valueAt(p) for p in spline_vals]
         return BubblesPath(spline_vals, new_radii)
 
-    def display(self, show_bubbles=True, cmap=None, color="green", blw=1, label=None):
+    def display(self, show_bubbles=True, cmap=None, color="green", lw=1, blw=1, label=None):
         lcol = []
         colors = []
         for k,bpos in enumerate(self.waypoints):
@@ -135,4 +144,14 @@ class BubblesPath(WaypointsPath):
                 lcol.append(np.array([bpos, self.waypoints[k+1]]))
         if cmap is not None:
             colors = [cmap(i/(len(lcol) - 1)) for i in range(len(lcol))]
-        plt.gca().add_collection(LineCollection(lcol, colors=colors, label=label))
+        plt.gca().add_collection(LineCollection(lcol, colors=colors, lw=lw, label=label))
+
+# Path evaluation for exploration
+def pathUnknownCoverageReward(bubbles_path, occupancy_map, unkn_range=[-1,-1]):
+    reward = 0
+    bmask = bubblesMask(occupancy_map, bubbles_path.getAsBubblesList(), radInflationMult=1.0, radInflationAdd=0.0)
+    unkn_mask = (occupancy_map.data >= unkn_range[0])
+    unkn_mask = unkn_mask*(occupancy_map.data <= unkn_range[1])
+    unknown_in_bubble = unkn_mask*bmask
+    reward = np.sum(unknown_in_bubble)
+    return reward

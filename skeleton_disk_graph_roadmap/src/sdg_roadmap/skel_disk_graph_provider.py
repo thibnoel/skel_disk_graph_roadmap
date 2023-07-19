@@ -10,11 +10,11 @@ from extended_mapping.map_processing import *
 
 from sdg_roadmap.graph_planner import *
 from sdg_roadmap.sdg_base import *
-from sdg_roadmap.bubbles_paths import BubblesPath
+from sdg_roadmap.bubbles_paths import *
 
 import json
 
-import numpy.ma as ma
+#import numpy.ma as ma
 
 
 def computeValidBubbles(pos_candidates, dist_map, min_bubble_rad, dist_offset):
@@ -52,6 +52,7 @@ def computeValidBubbles(pos_candidates, dist_map, min_bubble_rad, dist_offset):
     return bubbles
 
 def segmentSkeletonJoints(skeleton_dist_map):
+    """Extract the map coordinates of the skeleton joints in a binary map"""
     skeleton_dist_map.data[np.where(skeleton_dist_map.data == 0)] = -1
     skeletal_points = np.array(np.where(skeleton_dist_map.data > 0)).T
     if not len(skeletal_points):
@@ -90,26 +91,27 @@ def extractBubblesFromSkel(skeleton_map, dist_map, min_bubble_rad, dist_offset, 
     return computeValidBubbles(source_points, dist_map, min_bubble_rad, dist_offset)
 
 
-"""
-Implements the skeleton disk-graph construction
-"""
 class SkeletonDiskGraphProvider(GraphProvider):
     """
-    Initialization
-        Args:
-            - parameters_dict: dictionary formatted as :
-                {
-                    "min_jbubbles_rad": x,
-                    "min_pbubbles_rad": x,
-                    "bubbles_dist_offset": x,
-                    "knn_checks": x
-                }
+    Implements the skeleton disk-graph construction
     """
     def __init__(self, parameters_dict):
+        """
+        Initialization
+            Args:
+                - parameters_dict: dictionary formatted as :
+                    {
+                        "min_jbubbles_rad": x,
+                        "min_pbubbles_rad": x,
+                        "bubbles_dist_offset": x,
+                        "knn_checks": x
+                    }
+        """
         GraphPlanner.__init__(self)
         self.cached_dist_map = None
         self.kd_tree = None
         self.parameters_dict = parameters_dict
+
 
     ##############################
     ### GRAPH CONSTRUCTION
@@ -227,16 +229,21 @@ class SkeletonDiskGraphProvider(GraphProvider):
         nodes_path, nodes_path_length = self.getPath(start_id, goal_id)
         if nodes_path is None:
             return None
-        #nodes_waypoints = [self.graph.nodes[ind]['node_obj'].pos for ind in nodes_path]
         bubble_nodes = [self.graph.nodes[ind]['node_obj'] for ind in nodes_path]
         node_start = BubbleNode(world_start, -1)
         node_start.updateBubbleRad(self.cached_dist_map)
         node_goal = BubbleNode(world_goal, -1)
         node_goal.updateBubbleRad(self.cached_dist_map)
-        #nodes_waypoints = [world_start] + nodes_waypoints + [world_goal]
         bubble_nodes = [node_start] + bubble_nodes + [node_goal]
-        #return WaypointsPath(nodes_waypoints)
         return BubblesPath([b.pos for b in bubble_nodes], [b.bubble_rad for b in bubble_nodes])
+    
+    def getWorldPathFromIds(self, start_id, goal_id):
+        nodes_path, nodes_path_length = self.getPath(start_id, goal_id)
+        if nodes_path is None:
+            return None
+        bubble_nodes = [self.graph.nodes[ind]['node_obj'] for ind in nodes_path]
+        return BubblesPath([b.pos for b in bubble_nodes], [b.bubble_rad for b in bubble_nodes])
+    
 
     def getNodesInRange(self, source_id, path_length_range):
         """
@@ -249,9 +256,17 @@ class SkeletonDiskGraphProvider(GraphProvider):
                 in_range.append(p)
         return in_range
 
+
     ##############################
     ### FRONTIERS CHARACTERIZATION FOR EXPLORATION
+
     def isFrontier(self, cand_node_id, occupancy_map, map_unkn_range, frontier_unkn_threshold):
+        """
+        Implements the frontier check described in the paper
+        Checks 2 conditions :
+            - candidate node covrage < frontier unknown coverage threshold
+            - at least one neighbor centered in known free space
+        """
         cand_bubble = self.graph.nodes[cand_node_id]['node_obj']
         cand_coverage = cand_bubble.computeBubbleCoverage(occupancy_map, unkn_range=map_unkn_range, inflation_rad_mult=0.9)
         if cand_coverage > frontier_unkn_threshold:
@@ -264,6 +279,9 @@ class SkeletonDiskGraphProvider(GraphProvider):
         return False
 
     def searchClosestFrontiers(self, source_pos, occupancy_map, unkn_range, unkn_threhsold, search_dist_increment, max_iter=100):
+        """
+        Implements frontier search from a source position in an incremental manner
+        """
         init_node = self.getClosestNodes(source_pos, 1)[0]
         search_dist_range = [0, search_dist_increment]
         frontiers_ids = []
@@ -275,12 +293,12 @@ class SkeletonDiskGraphProvider(GraphProvider):
                 if self.isFrontier(cid, occupancy_map, unkn_range, unkn_threhsold):
                     frontiers_ids.append(cid)
                     frontiers_pos.append(self.graph.nodes[cid]['node_obj'].pos)
-            #frontiers_ids, frontiers_pos = self.coverageFrontiersCharac(check_ids, occ_map, unkn_range, unkn_threshold)
             search_dist_range[0] += search_dist_increment
             search_dist_range[1] += search_dist_increment
             curr_iter += 1
         return frontiers_ids, frontiers_pos
-    
+
+
     ##############################
     ### GRAPH VISUALIZATION
 
@@ -314,3 +332,60 @@ class SkeletonDiskGraphProvider(GraphProvider):
                 plt.scatter(bpos[:,0], bpos[:,1], c=[nodes_color_dict[ind] for ind in nodes_color_dict], s=marker_size)
             else:
                 plt.scatter(bpos[:,0], bpos[:,1], color=bcolor, s=marker_size)
+
+
+class SDGExplorationPathProvider:
+    def __init__(self, sdg_provider, map_unkn_occ_range, frontiers_max_known_ratio, frontiers_search_dist_increment):
+        self.sdg_provider = sdg_provider
+        self.map_unkn_occ_range = map_unkn_occ_range
+        self.frontiers_max_known_ratio = frontiers_max_known_ratio
+        self.frontiers_search_dist_increment = frontiers_search_dist_increment
+
+    def computePathCosts(self, path, occupancy_map):
+        path_costs = {}
+        path_costs['energy_penalty'] = path.getTotalLength()
+        path_costs['coverage_reward'] = pathUnknownCoverageReward(path, occupancy_map, unkn_range=self.map_unkn_occ_range)
+        return path_costs 
+
+    def normalizeCosts(self, frontiers_paths_dict):
+        extracted_costs = {}
+        for f_id in frontiers_paths_dict:
+            extracted_costs[f_id] = frontiers_paths_dict[f_id]['costs']
+        aggregated_costs = {}
+        for cost in extracted_costs[list(extracted_costs.keys())[0]].keys():
+            aggregated_costs[cost] = []
+            for f_id in extracted_costs:    
+                aggregated_costs[cost].append(extracted_costs[f_id][cost])
+        normalizers = {}
+        for cost in aggregated_costs:
+            normalizers[cost] = {}
+            normalizers[cost]['min'] = np.min(aggregated_costs[cost])
+            normalizers[cost]['max'] = np.max(aggregated_costs[cost])
+
+        for f_id in frontiers_paths_dict:
+            for cost in frontiers_paths_dict[f_id]['costs']:
+                frontiers_paths_dict[f_id]['costs'][cost] = (frontiers_paths_dict[f_id]['costs'][cost] - normalizers[cost]['min'])/(normalizers[cost]['max'] - normalizers[cost]['min'])
+
+    def getFrontiersPaths(self, source_pos, occupancy_map):
+        source_id = self.sdg_provider.getClosestNodes(source_pos, 1)[0]
+        frontiers_ids, _ = self.sdg_provider.searchClosestFrontiers(source_pos, occupancy_map, self.map_unkn_occ_range, self.frontiers_max_known_ratio, self.frontiers_search_dist_increment, max_iter=100)
+        frontiers_paths = {}
+        for f_id in frontiers_ids:
+            path = self.sdg_provider.getWorldPathFromIds(source_id, f_id)
+            if path is not None:
+                frontiers_paths[f_id] = {}
+                frontiers_paths[f_id]['path'] = path
+                frontiers_paths[f_id]['costs'] = self.computePathCosts(path, occupancy_map)
+        if len(frontiers_paths):
+            self.normalizeCosts(frontiers_paths)
+        return frontiers_paths
+
+    def selectExplorationPath(self, frontiers_paths_dict, cost_param_dict):
+        path_scores = {}
+        for f_id in frontiers_paths_dict:
+            path_score = 0
+            for cost in frontiers_paths_dict[f_id]['costs']:
+                path_score += frontiers_paths_dict[f_id]['costs'][cost]*cost_param_dict[cost]
+            path_scores[f_id] = path_score
+        best_path_id = max(path_scores, key=path_scores.get)
+        return frontiers_paths_dict[best_path_id]
