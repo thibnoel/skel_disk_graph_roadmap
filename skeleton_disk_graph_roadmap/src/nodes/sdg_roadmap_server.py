@@ -6,7 +6,7 @@ import rospy
 from sdg_roadmap.skel_disk_graph_provider import *
 from extended_mapping.map_processing import EnvironmentMap
 from extended_mapping.ros_conversions import *
-from nav_utilities import agent_pos_listener
+from navigation_utils.agent_pos_listener import AgentPosListener
 
 from std_msgs.msg import Float64, Int32
 from std_srvs.srv import Empty, EmptyResponse
@@ -23,7 +23,7 @@ class SDGRoadmapServer:
 
     def __init__(self, dist_server_node_name, map_frame, agent_frame, sdg_tuning_param):
         # TF listener
-        self.agent_pos_listener = agent_pos_listener.AgentPosListener(
+        self.agent_pos_listener = AgentPosListener(
             map_frame, agent_frame)
         # Publishers
         self.pathPublisher = rospy.Publisher("~planned_path", Path, queue_size=1, latch=True)
@@ -31,7 +31,7 @@ class SDGRoadmapServer:
         self.graph_nodes_size_publisher = rospy.Publisher("~graph_size/nodes", Int32, queue_size=1, latch=True)
         self.graph_edges_size_publisher = rospy.Publisher("~graph_size/edges", Int32, queue_size=1, latch=True)
         # Services
-        self.path_planning_service = rospy.Service("~plan_path", PlanPath, self.newPathPlanningCallback)
+        self.path_planning_service = rospy.Service("~plan_path", PlanPath, self.pathPlanningCallback)
         self.updateService = rospy.Service("~update_planner", Empty, self.updatePlanner)
         self.disk_graph_service = rospy.Service("~get_disk_graph", GetDiskGraph, self.getDiskGraphServiceCallback)
         # Services proxies 

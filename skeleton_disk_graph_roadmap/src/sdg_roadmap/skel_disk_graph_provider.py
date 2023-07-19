@@ -11,7 +11,7 @@ from extended_mapping.geom_processing import *
 
 from sdg_roadmap.graph_planner import *
 from sdg_roadmap.sdg_base import *
-from sdg_roadmap.paths_utils import BubblesPath
+from sdg_roadmap.bubbles_paths import BubblesPath
 
 import json
 
