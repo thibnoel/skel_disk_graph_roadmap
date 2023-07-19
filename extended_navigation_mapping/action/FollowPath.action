@@ -1,0 +1,9 @@
+# Goal 
+nav_msgs/Path path
+---
+# Result 
+std_msgs/String status # SUCCEEDED / ABORTED
+geometry_msgs/PoseStamped final_pose
+---
+# Feedback 
+float32 progress

@@ -1,0 +1,23 @@
+# Path following config file
+frames: {
+  agent_frame: "corrected_base_link",
+  #agent_frame: base_link,
+  map_frame: "map"
+}
+pub_topics: {
+  vel_topic: "/cmd_vel"
+}
+sub_topics: {
+  agent_obst_dist: "/agent_dist"
+}
+services: {
+  path_follower_action_server: "~follow_path"
+}
+controller: {
+  desired_linear_vel: 0.1,
+  max_angular_vel: 0.1,
+  k2: 4,
+  k3: 3,
+  success_goal_dist: 0.25,
+  agent_radius: 0.2
+}

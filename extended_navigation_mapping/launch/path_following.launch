@@ -1,0 +1,5 @@
+<launch>
+    <node name="path_follower" pkg="extended_navigation_mapping" type="path_following_server.py" output="screen">
+        <rosparam file="$(find extended_navigation_mapping)/config/navigation/path_following_config_sim.yaml"/>
+    </node>
+</launch>
