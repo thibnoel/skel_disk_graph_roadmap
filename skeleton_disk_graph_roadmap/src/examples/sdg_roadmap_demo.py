@@ -181,4 +181,24 @@ if __name__ == "__main__":
         plt.legend()
         plt.title("Path Planning")
     
+
+    ### Frontiers extraction
+    source_pos = np.array([42,18])
+    map_unkn_range = [0.04, 0.1]
+    frontier_known_threhsold = 0.5 # ratio of known space to total surface covered by a bubble to be considered known
+    search_dist_increment = 10
+
+    frontiers_ids, frontiers_pos = sdg_provider.searchClosestFrontiers(source_pos, env_map, map_unkn_range, frontier_known_threhsold, search_dist_increment)
+
+    SHOW_FRONTIERS_EXTRACTIION = True
+    if SHOW_FRONTIERS_EXTRACTIION:
+        plt.figure()
+        plt.title("Frontiers extraction")
+        graph_color = 'blue'
+        env_map.display(cmap=plt.cm.binary)
+        sdg_provider.display(True, True, True, ecolor=graph_color, bcolor=graph_color)
+        frontiers_pos = np.array(frontiers_pos)
+        plt.scatter(frontiers_pos[:,0], frontiers_pos[:,1], color='red')
+
+
     plt.show()

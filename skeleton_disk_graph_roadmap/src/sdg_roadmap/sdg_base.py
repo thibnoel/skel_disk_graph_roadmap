@@ -2,8 +2,13 @@ import numpy as np
 import networkx as nx
 from scipy.spatial import KDTree
 from extended_mapping.flux_skeletons_utils import *
+from extended_mapping.geom_processing import *
 
 class GraphProvider:
+    """
+    Base class for a graph representation of the environment
+    Implements helper methods
+    """
     def __init__(self):
         self.graph = nx.Graph()
         self.nodes_ids = []
@@ -114,6 +119,7 @@ class GraphProvider:
         for ind in isolated:
             self.removeNode(ind)
 
+
 class BubbleNode:
     """Class to represent a graph node as a free-space bubble
 
@@ -142,8 +148,8 @@ class BubbleNode:
         return dist_env_map.valueAt(self.pos) - robot_rad
 
     def updateBubbleRad(self, dist_env_map, robot_rad=0.0):
+        """Computes the bubble radius from the environment and sets it as the current value"""
         self.setBubbleRad(self.computeBubbleRad(dist_env_map, robot_rad=robot_rad))
-
 
     def computeBubbleCoverage(self, occ_map, unkn_range=[-1,-1], inflation_rad_mult=1):
         bmask = circularMask(occ_map.dim, occ_map.worldToMapCoord(self.pos),
@@ -151,8 +157,7 @@ class BubbleNode:
         unkn_mask = (occ_map.data >= unkn_range[0])
         unkn_mask = unkn_mask*(occ_map.data <= unkn_range[1])
         unknown_in_bubble = unkn_mask*bmask
-        return 1-np.sum(unknown_in_bubble)/np.sum(bmask), False
-
+        return 1-np.sum(unknown_in_bubble)/np.sum(bmask)
 
     def contains(self, pos, inflation=1.):
         """Checks if this bubble contains a given pos"""
@@ -201,3 +206,13 @@ class BubbleNode:
         dists = distancesPointToSet(self.pos, pos_list)
         valid = np.where(np.logical_and(dists < outer_range_mult*self.bubble_rad,dists >= inner_range_mult*self.bubble_rad))
         return valid 
+
+
+def bubblesMask(ref_env_map, bubbles, radInflationMult=1.0, radInflationAdd=0.0):
+    """TODO: Docstring"""
+    mask = np.zeros(ref_env_map.dim, dtype=bool)
+    bpos = ref_env_map.worldToMapCoord([b.pos for b in bubbles])
+    brad = np.array([b.bubble_rad for b in bubbles])/ref_env_map.resolution
+    for k, b in enumerate(bubbles):
+        mask = np.logical_or(mask, circularMask(ref_env_map.dim, bpos[k], brad[k]*radInflationMult + radInflationAdd))
+    return mask

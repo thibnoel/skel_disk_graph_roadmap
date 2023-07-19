@@ -7,7 +7,6 @@ from matplotlib.collections import LineCollection
 import time
 
 from extended_mapping.map_processing import *
-from extended_mapping.geom_processing import *
 
 from sdg_roadmap.graph_planner import *
 from sdg_roadmap.sdg_base import *
@@ -17,16 +16,6 @@ import json
 
 import numpy.ma as ma
 
-
-
-def bubblesMask(ref_env_map, bubbles, radInflationMult=1.0, radInflationAdd=0.0):
-    """TODO: Docstring"""
-    mask = np.zeros(ref_env_map.dim, dtype=bool)
-    bpos = ref_env_map.worldToMapCoord([b.pos for b in bubbles])
-    brad = np.array([b.bubble_rad for b in bubbles])/ref_env_map.resolution
-    for k, b in enumerate(bubbles):
-        mask = np.logical_or(mask, circularMask(ref_env_map.dim, bpos[k], brad[k]*radInflationMult + radInflationAdd))
-    return mask
 
 def computeValidBubbles(pos_candidates, dist_map, min_bubble_rad, dist_offset):
     """Implements the radius-descending bubbles extraction on a set of candidates"""
@@ -249,6 +238,49 @@ class SkeletonDiskGraphProvider(GraphProvider):
         #return WaypointsPath(nodes_waypoints)
         return BubblesPath([b.pos for b in bubble_nodes], [b.bubble_rad for b in bubble_nodes])
 
+    def getNodesInRange(self, source_id, path_length_range):
+        """
+        Returns all nodes ids reachable from source_id with a path of length in the specified range
+        """
+        in_range = []
+        all_paths = nx.single_source_dijkstra_path_length(self.graph, source_id, weight='cost')
+        for p in all_paths:
+            if path_length_range[0] < all_paths[p] < path_length_range[1]:
+                in_range.append(p)
+        return in_range
+
+    ##############################
+    ### FRONTIERS CHARACTERIZATION FOR EXPLORATION
+    def isFrontier(self, cand_node_id, occupancy_map, map_unkn_range, frontier_unkn_threshold):
+        cand_bubble = self.graph.nodes[cand_node_id]['node_obj']
+        cand_coverage = cand_bubble.computeBubbleCoverage(occupancy_map, unkn_range=map_unkn_range, inflation_rad_mult=0.9)
+        if cand_coverage > frontier_unkn_threshold:
+            return False
+        for neighb_id in self.graph.neighbors(cand_node_id):
+            neighb_node = self.graph.nodes[neighb_id]['node_obj']
+            neighb_center_occ = occupancy_map.valueAt(neighb_node.pos)
+            if neighb_center_occ < map_unkn_range[0]:
+                return True
+        return False
+
+    def searchClosestFrontiers(self, source_pos, occupancy_map, unkn_range, unkn_threhsold, search_dist_increment, max_iter=100):
+        init_node = self.getClosestNodes(source_pos, 1)[0]
+        search_dist_range = [0, search_dist_increment]
+        frontiers_ids = []
+        frontiers_pos = []
+        curr_iter = 0
+        while (not len(frontiers_ids)) and curr_iter < max_iter:
+            check_ids = self.getNodesInRange(init_node, search_dist_range)
+            for cid in check_ids:
+                if self.isFrontier(cid, occupancy_map, unkn_range, unkn_threhsold):
+                    frontiers_ids.append(cid)
+                    frontiers_pos.append(self.graph.nodes[cid]['node_obj'].pos)
+            #frontiers_ids, frontiers_pos = self.coverageFrontiersCharac(check_ids, occ_map, unkn_range, unkn_threshold)
+            search_dist_range[0] += search_dist_increment
+            search_dist_range[1] += search_dist_increment
+            curr_iter += 1
+        return frontiers_ids, frontiers_pos
+    
     ##############################
     ### GRAPH VISUALIZATION
 
