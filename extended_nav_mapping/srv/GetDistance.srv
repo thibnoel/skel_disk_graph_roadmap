@@ -1,7 +1,0 @@
----
-# Distance map
-extended_nav_mapping/EnvironmentGridMap distance
-# Gradient on the x axis
-extended_nav_mapping/EnvironmentGridMap grad_x
-# Gradient on the y axis
-extended_nav_mapping/EnvironmentGridMap grad_y

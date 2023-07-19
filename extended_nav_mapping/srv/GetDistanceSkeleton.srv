@@ -1,5 +1,0 @@
----
-# Distance map
-extended_nav_mapping/EnvironmentGridMap distance
-# Binary skeleton map
-extended_nav_mapping/EnvironmentGridMap skeleton

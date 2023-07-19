@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>extended_nav_mapping</name>
+  <name>extended_navigation_mapping</name>
   <version>0.0.0</version>
-  <description>The extended_nav_mapping package</description>
+  <description>The extended_navigation_mapping package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
