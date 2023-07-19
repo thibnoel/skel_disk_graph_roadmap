@@ -4,17 +4,12 @@ from pqdict import pqdict
 from scipy.spatial.distance import cdist
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
+import json
 import time
 
 from extended_mapping.map_processing import *
-
-from sdg_roadmap.graph_planner import *
 from sdg_roadmap.sdg_base import *
 from sdg_roadmap.bubbles_paths import *
-
-import json
-
-#import numpy.ma as ma
 
 
 def computeValidBubbles(pos_candidates, dist_map, min_bubble_rad, dist_offset):
@@ -107,7 +102,7 @@ class SkeletonDiskGraphProvider(GraphProvider):
                         "knn_checks": x
                     }
         """
-        GraphPlanner.__init__(self)
+        GraphProvider.__init__(self)
         self.cached_dist_map = None
         self.kd_tree = None
         self.parameters_dict = parameters_dict
@@ -219,7 +214,7 @@ class SkeletonDiskGraphProvider(GraphProvider):
 
     def getWorldPath(self, world_start, world_goal):
         """
-        Gets a path between a start and a goal world pos
+        Gets a BubblesPath between a start and a goal world pos
         Returns None if no path exists
         """
         start_reachable, start_id = self.isGraphReachable(world_start)
@@ -238,6 +233,10 @@ class SkeletonDiskGraphProvider(GraphProvider):
         return BubblesPath([b.pos for b in bubble_nodes], [b.bubble_rad for b in bubble_nodes])
     
     def getWorldPathFromIds(self, start_id, goal_id):
+        """
+        Gets a BubblesPath between two specified ids
+        Returns None if no path exists
+        """
         nodes_path, nodes_path_length = self.getPath(start_id, goal_id)
         if nodes_path is None:
             return None
@@ -342,12 +341,19 @@ class SDGExplorationPathProvider:
         self.frontiers_search_dist_increment = frontiers_search_dist_increment
 
     def computePathCosts(self, path, occupancy_map):
+        """
+        Computes the evaluation costs associated to a path
+        THIS SHOULD BE THE ONLY METHOD TO CHANGE IF NEW SELECTION COSTS ARE ADDED
+        """
         path_costs = {}
         path_costs['energy_penalty'] = path.getTotalLength()
         path_costs['coverage_reward'] = pathUnknownCoverageReward(path, occupancy_map, unkn_range=self.map_unkn_occ_range)
         return path_costs 
 
     def normalizeCosts(self, frontiers_paths_dict):
+        """
+        Takes a set of evaluated paths as a dictionary and normalizes all costs between 0 and 1
+        """
         extracted_costs = {}
         for f_id in frontiers_paths_dict:
             extracted_costs[f_id] = frontiers_paths_dict[f_id]['costs']
@@ -367,6 +373,10 @@ class SDGExplorationPathProvider:
                 frontiers_paths_dict[f_id]['costs'][cost] = (frontiers_paths_dict[f_id]['costs'][cost] - normalizers[cost]['min'])/(normalizers[cost]['max'] - normalizers[cost]['min'])
 
     def getFrontiersPaths(self, source_pos, occupancy_map):
+        """
+        Extracts frontiers from the Skeleton Disk-Graph, computes the associated paths and their evaluation costs
+        Returns the result as a dict indexed by the id of the corresponding frontier node
+        """
         source_id = self.sdg_provider.getClosestNodes(source_pos, 1)[0]
         frontiers_ids, _ = self.sdg_provider.searchClosestFrontiers(source_pos, occupancy_map, self.map_unkn_occ_range, self.frontiers_max_known_ratio, self.frontiers_search_dist_increment, max_iter=100)
         frontiers_paths = {}
