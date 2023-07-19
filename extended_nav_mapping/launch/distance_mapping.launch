@@ -1,6 +1,7 @@
 <launch>
     <!-- 
     Parameters files for :
+        - Occupancy preprocessing
         - Distance server
         - Agent distance publisher
     -->
