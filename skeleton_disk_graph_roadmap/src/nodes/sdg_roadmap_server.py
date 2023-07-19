@@ -12,7 +12,7 @@ from std_msgs.msg import Float64, Int32
 from std_srvs.srv import Empty, EmptyResponse
 from geometry_msgs.msg import Pose, PoseStamped
 from nav_msgs.msg import Path
-from extended_nav_mapping.srv import GetDistanceSkeleton
+from extended_navigation_mapping.srv import GetDistanceSkeleton
 from skeleton_disk_graph_roadmap.msg import DiskGraph, DiskGraphNode, DiskGraphEdge
 from skeleton_disk_graph_roadmap.srv import PlanPath, PlanPathResponse, GetDiskGraph, GetDiskGraphResponse
 

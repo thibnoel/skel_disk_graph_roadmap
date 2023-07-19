@@ -17,7 +17,7 @@ from geometry_msgs.msg import Point
 from nav_msgs.srv import GetMap
 from ros_explore_navigation.msg import FollowPathAction, FollowPathGoal, FollowPathActionResult
 from ros_explore_navigation.srv import GetPathLengths
-from extended_nav_mapping.srv import GetDistance
+from extended_navigation_mapping.srv import GetDistance
 from skeleton_disk_graph_roadmap.srv import GetDiskGraph
 
 from sdg_roadmap_server import SDGRoadmapServer
