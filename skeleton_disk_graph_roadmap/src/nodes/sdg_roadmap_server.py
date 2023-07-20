@@ -39,13 +39,12 @@ class SDGRoadmapServer:
 
         # Initialize planner
         #self.sdg_planner = SkeletonDiskGraph(sdg_tuning_param)
-        self.sdg_provider = SkeletonDiskGraphProvider(sdg_tuning_param_dict)
-        self.path_subdiv_length = sdg_tuning_param_dict["path_subdiv_length"]
+        self.sdg_provider = SkeletonDiskGraphProvider(sdg_tuning_param)
+        self.path_subdiv_length = sdg_tuning_param["path_subdiv_length"]
 
     
-    # def resetPlanner(self, sdg_tuning_param_dict):
-    #     self.sdg_planner = SkeletonDiskGraph(sdg_tuning_param_dict)
-    
+    def resetPlanner(self, sdg_tuning_param_dict):
+        self.sdg_provider = SkeletonDiskGraphProvider(sdg_tuning_param_dict)    
 
     def updatePlanner(self, req):
         """
@@ -71,33 +70,6 @@ class SDGRoadmapServer:
         edges_size = len(self.sdg_provider.graph.edges)
         self.graph_nodes_size_publisher.publish(Int32(nodes_size))
         self.graph_edges_size_publisher.publish(Int32(edges_size))
-
-
-    # def outdated_pathPlanningCallback(self, path_planning_request):
-    #     """
-    #     Computes and returns a feasible path on a new path planning request
-    #     """
-    #     self.updatePlanner(None)
-    #     start = self.agent_pos_listener.get2DAgentPos()
-    #     goal = np.array([path_planning_request.goal.x,
-    #                     path_planning_request.goal.y])
-    #     world_path = self.sdg_planner.getWorldPath(start, goal)
-    #     path, path_radii = world_path['postprocessed']['pos'], world_path['postprocessed']['radii']
-    #     reduced_path = self.sdg_planner.reduceBubblesPath(path, path_radii)
-    #     rospy.loginfo("Path planning - goal : [{},{}], found path : {}".format(
-    #         goal[0], goal[1], (path is not None)))
-    #     print("Got path - starting reduction")
-    #     if path is None:
-    #         return PlanPathResponse()
-    #     path = np.array(path)
-    #     #red_path = path
-    #     red_path = np.array(self.sdg_planner.reduceBubblesPath(path, path_radii))
-    #     red_path_radii = np.array([self.sdg_planner.cached_dist_map.valueAt(wp) for wp in red_path])
-    #     path_cpoints = computeSplineControlPoints(red_path, red_path_radii)
-    #     spline_path = computeSplinePath(path_cpoints)
-    #     red_path = spline_path.waypoints
-    #     print("Got reduced path")
-    #     return self.constructPathMsg(red_path)
 
     def pathPlanningCallback(self, path_planning_request):
         """
@@ -141,8 +113,7 @@ class SDGRoadmapServer:
             path_poses.append(pos_stamped)
         path_msg.poses = path_poses
         self.pathPublisher.publish(path_msg)
-        # planner_rrt.show()
-
+        
         response_path = PlanPathResponse()
         response_path.path = path_msg
 
@@ -199,7 +170,6 @@ if __name__ == '__main__':
         "knn_checks" : rospy.get_param("~sdg/knn_checks",40),
         "path_subdiv_length" : rospy.get_param("~sdg/path_subdiv_length",0.4)
     }
-    #sdg_tuning_param = SkeletonDiskGraphTuningParameters(sdg_tuning_param_dict)
     sdg_roadmap = SDGRoadmapServer(dist_server_node_name, map_frame, agent_frame, sdg_tuning_param_dict)
     rospy.wait_for_service(dist_server_node_name + "/get_distance_skeleton")
 

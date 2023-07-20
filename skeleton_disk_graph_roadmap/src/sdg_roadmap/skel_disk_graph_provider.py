@@ -381,7 +381,8 @@ class SDGExplorationPathProvider:
         frontiers_ids, _ = self.sdg_provider.searchClosestFrontiers(source_pos, occupancy_map, self.map_unkn_occ_range, self.frontiers_max_known_ratio, self.frontiers_search_dist_increment, max_iter=100)
         frontiers_paths = {}
         for f_id in frontiers_ids:
-            path = self.sdg_provider.getWorldPathFromIds(source_id, f_id)
+            f_pos = self.sdg_provider.graph.nodes[f_id]['node_obj'].pos
+            path = self.sdg_provider.getWorldPath(source_pos, f_pos)
             if path is not None:
                 frontiers_paths[f_id] = {}
                 frontiers_paths[f_id]['path'] = path
@@ -392,6 +393,8 @@ class SDGExplorationPathProvider:
 
     def selectExplorationPath(self, frontiers_paths_dict, cost_param_dict):
         path_scores = {}
+        if not len(frontiers_paths_dict):
+            return None
         for f_id in frontiers_paths_dict:
             path_score = 0
             for cost in frontiers_paths_dict[f_id]['costs']:
@@ -399,3 +402,13 @@ class SDGExplorationPathProvider:
             path_scores[f_id] = path_score
         best_path_id = max(path_scores, key=path_scores.get)
         return frontiers_paths_dict[best_path_id]
+
+    def checkFrontierValidity(self, node_pos, occ_map, dist_map):
+        new_node_rad = dist_map.valueAt(node_pos)
+        bmask = circularMask(occ_map.dim, occ_map.worldToMapCoord(node_pos), 0.9*new_node_rad/occ_map.resolution - 1)
+        unkn_mask = (occ_map.data >= self.map_unkn_occ_range[0])
+        unkn_mask = unkn_mask*(occ_map.data <= self.map_unkn_occ_range[1])
+        unknown_in_bubble = unkn_mask*bmask
+        if np.sum(unknown_in_bubble) > 0: #/np.sum(bmask) > 0:#and np.sum(obst_bmask*obst_mask) == 0:
+            return True
+        return False

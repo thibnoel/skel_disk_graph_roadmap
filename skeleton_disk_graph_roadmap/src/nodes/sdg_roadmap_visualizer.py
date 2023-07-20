@@ -9,7 +9,7 @@ from nav_utilities import agent_pos_listener
 from std_srvs.srv import Empty, EmptyResponse
 from geometry_msgs.msg import Point, Pose, PoseStamped
 from nav_msgs.msg import Path
-from extended_nav_mapping.srv import GetDistance
+from extended_navigation_mapping.srv import GetDistance
 from skeleton_disk_graph_roadmap.msg import DiskGraph, DiskGraphNode, DiskGraphEdge
 from skeleton_disk_graph_roadmap.srv import PlanPath, PlanPathResponse
 from visualization_msgs.msg import Marker, MarkerArray
