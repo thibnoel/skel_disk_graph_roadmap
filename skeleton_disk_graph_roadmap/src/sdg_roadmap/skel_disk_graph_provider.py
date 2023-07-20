@@ -212,7 +212,7 @@ class SkeletonDiskGraphProvider(GraphProvider):
                 return True, cl.id
         return False, -1
 
-    def getWorldPath(self, world_start, world_goal):
+    def getWorldPath(self, world_start, world_goal, postprocessed=False):
         """
         Gets a BubblesPath between a start and a goal world pos
         Returns None if no path exists
@@ -230,8 +230,14 @@ class SkeletonDiskGraphProvider(GraphProvider):
         node_goal = BubbleNode(world_goal, -1)
         node_goal.updateBubbleRad(self.cached_dist_map)
         bubble_nodes = [node_start] + bubble_nodes + [node_goal]
-        return BubblesPath([b.pos for b in bubble_nodes], [b.bubble_rad for b in bubble_nodes])
-    
+        raw_path = BubblesPath([b.pos for b in bubble_nodes], [b.bubble_rad for b in bubble_nodes])
+        if not postprocessed:
+            return raw_path
+        else:
+            simplified_path = raw_path.getSubdivized(int(raw_path.getTotalLength()/np.min(raw_path.radii)), self.cached_dist_map).getReducedBubbles()
+            spline_path = simplified_path.getSmoothedSpline(self.cached_dist_map)
+            return spline_path
+        
     def getWorldPathFromIds(self, start_id, goal_id):
         """
         Gets a BubblesPath between two specified ids
@@ -334,11 +340,12 @@ class SkeletonDiskGraphProvider(GraphProvider):
 
 
 class SDGExplorationPathProvider:
-    def __init__(self, sdg_provider, map_unkn_occ_range, frontiers_max_known_ratio, frontiers_search_dist_increment):
+    def __init__(self, sdg_provider, map_unkn_occ_range, frontiers_max_known_ratio, frontiers_search_dist_increment, cost_param_dict):
         self.sdg_provider = sdg_provider
         self.map_unkn_occ_range = map_unkn_occ_range
         self.frontiers_max_known_ratio = frontiers_max_known_ratio
         self.frontiers_search_dist_increment = frontiers_search_dist_increment
+        self.cost_param_dict = cost_param_dict
 
     def computePathCosts(self, path, occupancy_map):
         """
@@ -369,8 +376,10 @@ class SDGExplorationPathProvider:
             normalizers[cost]['max'] = np.max(aggregated_costs[cost])
 
         for f_id in frontiers_paths_dict:
+            frontiers_paths_dict[f_id]['aggregated_cost'] = 0
             for cost in frontiers_paths_dict[f_id]['costs']:
                 frontiers_paths_dict[f_id]['costs'][cost] = (frontiers_paths_dict[f_id]['costs'][cost] - normalizers[cost]['min'])/(normalizers[cost]['max'] - normalizers[cost]['min'])
+                frontiers_paths_dict[f_id]['aggregated_cost'] += frontiers_paths_dict[f_id]['costs'][cost]*self.cost_param_dict[cost]
 
     def getFrontiersPaths(self, source_pos, occupancy_map):
         """
@@ -382,7 +391,7 @@ class SDGExplorationPathProvider:
         frontiers_paths = {}
         for f_id in frontiers_ids:
             f_pos = self.sdg_provider.graph.nodes[f_id]['node_obj'].pos
-            path = self.sdg_provider.getWorldPath(source_pos, f_pos)
+            path = self.sdg_provider.getWorldPath(source_pos, f_pos, postprocessed=True)
             if path is not None:
                 frontiers_paths[f_id] = {}
                 frontiers_paths[f_id]['path'] = path
@@ -392,16 +401,17 @@ class SDGExplorationPathProvider:
         return frontiers_paths
 
     def selectExplorationPath(self, frontiers_paths_dict, cost_param_dict):
-        path_scores = {}
-        if not len(frontiers_paths_dict):
-            return None
-        for f_id in frontiers_paths_dict:
-            path_score = 0
-            for cost in frontiers_paths_dict[f_id]['costs']:
-                path_score += frontiers_paths_dict[f_id]['costs'][cost]*cost_param_dict[cost]
-            path_scores[f_id] = path_score
+    # path_scores = {}
+    # if not len(frontiers_paths_dict):
+    #     return None
+    # for f_id in frontiers_paths_dict:
+    #     path_score = 0
+    #     for cost in frontiers_paths_dict[f_id]['costs']:
+    #         path_score += frontiers_paths_dict[f_id]['costs'][cost]*cost_param_dict[cost]
+    #     path_scores[f_id] = path_score
+        path_scores = {f_id: frontiers_paths_dict[f_id]['aggregated_cost'] for f_id in frontiers_paths_dict}
         best_path_id = max(path_scores, key=path_scores.get)
-        return frontiers_paths_dict[best_path_id]
+        return best_path_id, frontiers_paths_dict[best_path_id]
 
     def checkFrontierValidity(self, node_pos, occ_map, dist_map):
         new_node_rad = dist_map.valueAt(node_pos)

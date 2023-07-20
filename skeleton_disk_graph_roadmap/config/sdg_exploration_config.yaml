@@ -21,4 +21,4 @@ strategy:
   #max_dist_compromise: 5
   #unknown_max_coverage: 0.3
   frontiers_max_known_ratio: 0.5
-  search_dist_increment: 1
+  search_dist_increment: 5
