@@ -5,7 +5,6 @@ from matplotlib import rcParams
 from matplotlib.colors import Normalize
 
 from extended_mapping.map_processing import *
-#from extended_mapping.farthest_point_sampling import *
 from sdg_roadmap.skel_disk_graph_provider import *
 
 def distanceFigure(map_preproc_config, distance_map, cmap, contour_color=None, contour_lw=2, title=True):
@@ -192,18 +191,19 @@ if __name__ == "__main__":
         "coverage_reward": 0.5
     }
 
-    exploration_provider = SDGExplorationPathProvider(sdg_provider, map_unkn_range, frontier_known_threhsold, search_dist_increment)
+    exploration_provider = SDGExplorationPathProvider(sdg_provider, map_unkn_range, frontier_known_threhsold, search_dist_increment, path_cost_param)
     frontiers_paths = exploration_provider.getFrontiersPaths(source_pos, env_map)
-    best_path = exploration_provider.selectExplorationPath(frontiers_paths, path_cost_param)
+    best_id, best_path = exploration_provider.selectExplorationPath(frontiers_paths)
 
     SHOW_FRONTIERS_EXTRACTIION = True
     if SHOW_FRONTIERS_EXTRACTIION:
         plt.figure()
         plt.title("Frontiers extraction")
         env_map.display(cmap=plt.cm.binary)
-        length_cost_cmap = plt.cm.winter
+        length_cost_cmap = plt.cm.cool_r
         for path_id in frontiers_paths:
-            frontiers_paths[path_id]['path'].display(show_bubbles=False, color=length_cost_cmap(frontiers_paths[path_id]['costs']['energy_penalty']))
-        best_path['path'].display(show_bubbles=False, color='red', lw=3)
+            frontiers_paths[path_id]['path'].display(show_bubbles=False, color=length_cost_cmap(frontiers_paths[path_id]['costs']['energy_penalty']), lw=2)
+        best_path['path'].display(show_bubbles=False, color='red', lw=4, label="Best explo. path")
+        plt.legend()
 
     plt.show()
