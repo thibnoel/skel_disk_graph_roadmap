@@ -25,7 +25,7 @@ class SDGExplorationVisualizer:
 
         self.frontiers_paths_h = 1
         self.frontiers_paths_valid_color = [0.8,0.4,0,0.5]
-        self.frontiers_paths_invalid_color = [0.8,0,0,0.5]
+        self.best_frontier_highlight_color = [0.9,0.2,0.2,0.8]
         self.frontiers_paths_lwidth = 0.06
 
         self.past_plans_h = 1
@@ -85,7 +85,7 @@ class SDGExplorationVisualizer:
     def publishReplanPosViz(self, replan_pos):
         self.replan_pos_publisher.publish(self.constructReplanPosVizMsg(replan_pos))
 
-    def constructFrontiersPlanVizMsg(self, frontiers_paths, best_path_id, dist_valid_path_ids):
+    def constructFrontiersPlanVizMsg(self, frontiers_paths, best_path_id):
         """Builds a RViz visualization message for the planning phase to the graph frontier nodes"""
         markers_list = []
         marker_index = 0
@@ -100,25 +100,27 @@ class SDGExplorationVisualizer:
             vertex_marker.header = marker_header
             vertex_marker.id = marker_index
             vertex_marker.type = 4  # Line strip
-            vertex_marker.points = [Point(p[0], p[1], 0) for p in path['postprocessed']]
+            vertex_marker.points = [Point(p[0], p[1], 0) for p in path['path'].waypoints]
             vertex_marker.pose = Pose(
                 Point(0,0,self.frontiers_paths_h), Quaternion(0, 0, 0, 1))
             #color = colors(1.*v.level/max_vertex_level)
-            if path_id in dist_valid_path_ids:
-                path_color = self.frontiers_paths_valid_color
-            else:
-                path_color = self.frontiers_paths_invalid_color
+            #if path_id in dist_valid_path_ids:
+            #    path_color = self.frontiers_paths_valid_color
+            #else:
+            #    path_color = self.frontiers_paths_invalid_color
+            path_color = self.frontiers_paths_valid_color
+            vertex_marker.scale.x = self.frontiers_paths_lwidth
+            if path_id == best_path_id:
+                vertex_marker.scale.x *= 3
+                path_color = self.best_frontier_highlight_color
             vertex_marker.color.r = path_color[0]
             vertex_marker.color.g = path_color[1]
             vertex_marker.color.b = path_color[2]
             vertex_marker.color.a = path_color[3]
-            vertex_marker.scale.x = self.frontiers_paths_lwidth
-            if path['nodes_ids'][-1] == best_path_id:
-                vertex_marker.scale.x *= 3
             #vertex_marker.points = [Point(v.pos[0], v.pos[1], 0), Point(v.parent.pos[0], v.parent.pos[1], 0)]
             vertex_marker.lifetime = rospy.Duration(6)
 
-            frontier_pos = path['postprocessed'][-1]
+            frontier_pos = path['path'].waypoints[-1]
             frontier_marker = Marker()
             frontier_marker.header = marker_header
             frontier_marker.id = marker_index + 1
@@ -136,14 +138,31 @@ class SDGExplorationVisualizer:
             #vertex_marker.points = [Point(v.pos[0], v.pos[1], 0), Point(v.parent.pos[0], v.parent.pos[1], 0)]
             frontier_marker.lifetime = rospy.Duration(6)
 
+            text_marker = Marker()
+            text_marker.type = 9  # text
+            text_marker.header = marker_header
+            text_marker.color.r = path_color[0]
+            text_marker.color.g = path_color[1]
+            text_marker.color.b = path_color[2]
+            text_marker.color.a = 1
+            text_marker.scale.z = 0.5
+            text_marker.pose = Pose(
+                Point(frontier_pos[0], frontier_pos[1], 1.25*self.frontiers_paths_h), Quaternion(0, 0, 0, 1))
+            text_marker.pose.position.x += 0.2
+            text_marker.pose.position.y += 0.2
+            text_marker.id = marker_index + 2
+            text_marker.text = "{:.3f}".format(path['aggregated_cost'])
+            text_marker.lifetime = rospy.Duration(6)
+
             markers_list.append(vertex_marker)
             markers_list.append(frontier_marker)
-            marker_index += 2
+            markers_list.append(text_marker)
+            marker_index += 3
         marker_array = MarkerArray(markers_list)
         return marker_array
 
-    def publishFrontiersPlanViz(self, frontiers_paths, best_path_id, dist_valid_path_ids):
-        self.frontiers_plan_publisher.publish(self.constructFrontiersPlanVizMsg(frontiers_paths, best_path_id, dist_valid_path_ids))
+    def publishFrontiersPlanViz(self, frontiers_paths, best_path_id):
+        self.frontiers_plan_publisher.publish(self.constructFrontiersPlanVizMsg(frontiers_paths, best_path_id))
 
     def constructPastPlanVizMsg(self, past_plans_paths):
         """Builds a RViz visualization message for the planning phase to the graph frontier nodes"""
@@ -159,7 +178,7 @@ class SDGExplorationVisualizer:
             vertex_marker.header = marker_header
             vertex_marker.id = marker_index
             vertex_marker.type = 4  # Line strip
-            vertex_marker.points = [Point(p[0], p[1], 0) for p in path['postprocessed']]
+            vertex_marker.points = [Point(p[0], p[1], 0) for p in path]
             vertex_marker.pose = Pose(
                 Point(0,0,self.past_plans_h), Quaternion(0, 0, 0, 1))
             #color = colors(1.*v.level/max_vertex_level)

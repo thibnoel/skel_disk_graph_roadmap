@@ -19,10 +19,16 @@ from extended_navigation_mapping.srv import GetDistance
 from skeleton_disk_graph_roadmap.srv import GetDiskGraph
 
 from sdg_roadmap_server import SDGRoadmapServer
+from sdg_exploration_visualizer import SDGExplorationVisualizer
 
 
 class SDGExplorationServer:
     def __init__(self, occ_map_service, path_following_node_name, dist_server_node_name, map_frame, agent_frame, sdg_tuning_param, sdg_strat_param, safety_dist):
+        # TO PARAMETRIZE SOMEWHERE ELSE
+        self.path_cost_param = {
+            "energy_penalty": -1,
+            "coverage_reward": 1
+        }
         # Subscribers
         self.pf_result_subscriber = rospy.Subscriber(
             pf_node_name + "/follow_path/result", FollowPathActionResult, self.pfResultCallback)
@@ -42,21 +48,20 @@ class SDGExplorationServer:
             self.sdg_roadmap_server.sdg_provider,
             sdg_strat_param["unkn_occ_range"],
             sdg_strat_param["frontiers_max_known_ratio"],
-            sdg_strat_param["search_dist_increment"]
+            sdg_strat_param["search_dist_increment"],
+            self.path_cost_param
         )
-        # State
+
         self.safety_dist = safety_dist
+        self.visualizer = SDGExplorationVisualizer()
+        # State
         self.is_following_path = False
         self.current_target_pos = None
         self.current_path = None
         self.current_goal = None
         self.replan_pos = []
         self.past_plans = []
-        # TO PARAMETRIZE SOMEWHERE ELSE
-        self.path_cost_param = {
-            "energy_penalty": -1,
-            "coverage_reward": 0.5
-        }
+        
 
     def resetPlanner(self, sdg_tuning_param_dict):
         rospy.logwarn("RESETTING PLANNER")
@@ -91,16 +96,21 @@ class SDGExplorationServer:
         self.replan_pos.append(start)
         self.sdg_roadmap_server.updatePlanner(None)
         frontiers_paths = self.sdg_exploration_path_provider.getFrontiersPaths(start, envMapFromRosEnvGridMapMsg(self.occ_map_proxy().map))
-        best_path = self.sdg_exploration_path_provider.selectExplorationPath(frontiers_paths, self.path_cost_param)
+        best_id, best_path = self.sdg_exploration_path_provider.selectExplorationPath(frontiers_paths, self.path_cost_param)
         if best_path is None:
             return None
         self.current_target_pos = best_path['path'].waypoints[-1]
-        raw_best_path = best_path['path']
-        path_subdiv_length = 0.5*np.min(raw_best_path.radii)
-        simplified_path = raw_best_path.getSubdivized(int(raw_best_path.getTotalLength()/path_subdiv_length), dist_map).getReducedBubbles()
-        spline_path = simplified_path.getSmoothedSpline(dist_map)
-        self.current_path = spline_path
-        return self.sdg_roadmap_server.constructPathMsg(spline_path.waypoints)
+        best_path = best_path['path']
+        #path_subdiv_length = 0.5*np.min(raw_best_path.radii)
+        #simplified_path = raw_best_path.getSubdivized(int(raw_best_path.getTotalLength()/path_subdiv_length), dist_map).getReducedBubbles()
+        #spline_path = simplified_path.getSmoothedSpline(dist_map)
+        self.current_path = best_path
+        self.past_plans.append(best_path.waypoints)
+        self.visualizer.publishReplanPosViz(self.replan_pos)
+        self.visualizer.publishFrontiersPlanViz(frontiers_paths, best_id)
+        self.visualizer.publishPastPlanViz(self.past_plans[:-1])
+
+        return self.sdg_roadmap_server.constructPathMsg(best_path.waypoints)
 
     def interruptOnInvalidTarget(self):
         occ_map = envMapFromRosEnvGridMapMsg(self.occ_map_proxy().map)
@@ -154,6 +164,7 @@ if __name__ == "__main__":
     while not rospy.is_shutdown():
         r.sleep()
         if not exploration_server.is_following_path:
+            
             path = exploration_server.selectPath()
             if path is not None:
                 exploration_server.callPathFollowingDetached(path)
