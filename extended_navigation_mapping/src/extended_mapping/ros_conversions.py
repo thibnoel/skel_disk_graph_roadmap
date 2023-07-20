@@ -1,7 +1,7 @@
 import numpy as np
 from extended_mapping.map_processing import EnvironmentMap
 
-from extended_nav_mapping.msg import EnvironmentGridMap
+from extended_navigation_mapping.msg import EnvironmentGridMap
 from std_msgs.msg import Header
 from geometry_msgs.msg import Vector3, Quaternion
 from nav_msgs.msg import MapMetaData

@@ -118,7 +118,6 @@ class FollowPathServer :
             self.last_command_vel = command[0]
             self.last_command_ang = command[1]
             self.vel_publisher.publish(vel_command)
-            #print(command)
         
         vel_command = Twist()
         self.vel_publisher.publish(vel_command)
@@ -133,7 +132,6 @@ class FollowPathServer :
             self.follow_path_server.set_succeeded(result) 
         else :
             print("Path following interrupted")
-            #self.follow_path_server.set_aborted()
 
 
 if __name__ == "__main__":   

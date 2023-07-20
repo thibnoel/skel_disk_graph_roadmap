@@ -119,59 +119,6 @@ class WaypointsPath:
         subdPath = WaypointsPath(np.array(subd_waypoints))
         return subdPath
 
-    '''
-    def simplifyToMinimalLines(self, costMap, mapOrigin, mapRes, costThresh, show=False):
-        def maxCostBetween(startPos, endPos, lineRes):
-            # Returns the max cost encountered between parent and node
-            max_cost = -float('inf')
-            length = np.linalg.norm(endPos - startPos)
-            nPos = int(length/lineRes)
-            posList = [startPos + (1.0*i/(nPos-1))*(endPos - startPos)
-                       for i in range(nPos)] + [endPos]
-            for pos in posList:
-                pix_pos = worldPos_to_pixPos(np.array(pos), mapOrigin, mapRes)
-                max_cost = max(max_cost, costMap[pix_pos[0], pix_pos[1]])
-            return max_cost
-
-        LINE_RES = 0.005
-
-        new_waypoints = [self.waypoints[0]]
-        solvedUpTo = 0
-        curr_try_ind = len(self.waypoints) - 1
-        curr_cost = maxCostBetween(
-            self.waypoints[solvedUpTo], self.waypoints[curr_try_ind], LINE_RES)
-        lines_count = 0
-        while(solvedUpTo < len(self.waypoints)-1):
-            while(curr_cost > costThresh and curr_try_ind > solvedUpTo + 1):
-
-                if show:
-                    plot_points = np.vstack(
-                        (self.waypoints[solvedUpTo], self.waypoints[curr_try_ind]))
-                    plt.plot(plot_points[:, 0],
-                             plot_points[:, 1], color='red', lw=0.5)
-
-                curr_try_ind -= 1
-                curr_cost = maxCostBetween(
-                    self.waypoints[solvedUpTo], self.waypoints[curr_try_ind], LINE_RES)
-
-            if show:
-                plot_points = np.vstack(
-                    (self.waypoints[solvedUpTo], self.waypoints[curr_try_ind]))
-                plt.plot(plot_points[:, 0], plot_points[:, 1],
-                         color='green', lw=2, marker='.')
-
-            new_waypoints.append(self.waypoints[curr_try_ind])
-            solvedUpTo = curr_try_ind
-
-            curr_try_ind = len(self.waypoints) - 1
-            curr_cost = maxCostBetween(
-                self.waypoints[solvedUpTo], self.waypoints[curr_try_ind], LINE_RES)
-            lines_count += 1
-
-        print("Path simplification solved - {} lines remaining".format(lines_count))
-        return WaypointsPath(np.array(new_waypoints))
-    '''
-
     def computeDthetaList(self, init_theta=0):
         # Modif dtheta_list indexing to match redaction
         #dtheta_list = []
@@ -190,11 +137,7 @@ class WaypointsPath:
         return dtheta_list
 
     def show(self, color='blue', marker=',', linewidth=1, label=None):
-        #t = 0
-        #dt = 1/n_points
         for k in range(len(self.waypoints) - 1):
-            #p0 = self.getPosAt(t)
-            #p1 = self.getPosAt(t+dt)
             p0 = self.waypoints[k]
             p1 = self.waypoints[k+1]
             if k == 0:
@@ -203,4 +146,3 @@ class WaypointsPath:
             else:
                 plt.plot([p0[0], p1[0]], [p0[1], p1[1]], color=color,
                          marker=marker, linewidth=linewidth, markersize=3*linewidth)
-            #t = t+dt
