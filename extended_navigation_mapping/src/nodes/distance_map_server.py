@@ -6,15 +6,18 @@ import rospy
 import time
 import numpy as np
 import threading
+import matplotlib.pyplot as plt
 
 from extended_mapping.map_processing import * #ROSEnvMapToArray, ROSOccMapToArray, EnvironmentMap
+from extended_mapping.ros_conversions import *
 from extended_mapping.flux_skeletons_utils import gradFlux, fluxToSkeletonMap
+
 from nav_msgs.msg import MapMetaData, OccupancyGrid
 from nav_msgs.srv import GetMap
 from geometry_msgs.msg import Twist, Vector3, Pose, PoseStamped, Point, Quaternion
-from ros_explore_mapping.msg import EnvironmentGridMap
-from ros_explore_mapping.srv import GetDistance, GetDistanceResponse, GetDistanceSkeleton, GetDistanceSkeletonResponse
-import matplotlib.pyplot as plt
+from extended_navigation_mapping.msg import EnvironmentGridMap
+from extended_navigation_mapping.srv import GetDistance, GetDistanceResponse, GetDistanceSkeleton, GetDistanceSkeletonResponse
+
 
 class DistanceMapServer:
     """ROS node to provide a distance map and its gradients, by processing an occupancy map"""
@@ -53,7 +56,7 @@ class DistanceMapServer:
     def occMapCallback(self, occ_grid_msg):
         """Input map callback"""
         if self.input_map is None :
-            self.input_map = EnvironmentMap.initFromRosOccMsg(occ_grid_msg)
+            self.input_map = envMapFromRosOccMsg(occ_grid_msg)
         occ_data = ROSOccMapToArray(occ_grid_msg)
         
         self.input_map.setResolution(occ_grid_msg.info.resolution)
@@ -118,6 +121,7 @@ class DistanceMapServer:
             self.dist_occ_map.header = occ_map.header
             self.dist_occ_map.info = occ_map.info
             self.dist_occ_map.info.resolution = self.dist_map.resolution
+            self.dist_occ_map.info.origin.position.z = occ_map.info.origin.position.z - 1.
             self.dist_occ_map.info.width = self.dist_map.dim[0]
             self.dist_occ_map.info.height = self.dist_map.dim[1]
             self.dist_occ_map.data = (100*(1-(self.dist_map.data > 0)*(self.dist_map.data/np.max(self.dist_map.data)))).T.astype(np.uint8).flatten()
@@ -169,8 +173,6 @@ class DistanceMapServer:
         self.computeSkeletonMap()
         response = GetDistanceSkeletonResponse()
         response.distance = envMapToROSMsg(self.dist_map, frame_id="map")
-        #response.grad_x = envMapToROSMsg(self.dist_grad_x, frame_id="map")
-        #response.grad_y = envMapToROSMsg(self.dist_grad_y, frame_id="map")
         response.skeleton = envMapToROSMsg(self.skeleton_map, frame_id="map")
         return response
 

@@ -2,12 +2,13 @@
 # -*- encoding: UTF-8 -*-
 
 import rospy
-from sdg_roadmap.sdg_roadmap_utils import *
+import numpy as np
 from extended_mapping.map_processing import EnvironmentMap
 from nav_utilities import agent_pos_listener
 
 from std_srvs.srv import Empty, EmptyResponse
-from geometry_msgs.msg import Point, Pose, PoseStamped
+from std_msgs.msg import Header
+from geometry_msgs.msg import Point, Pose, PoseStamped, Quaternion
 from nav_msgs.msg import Path
 from extended_navigation_mapping.srv import GetDistance
 from skeleton_disk_graph_roadmap.msg import DiskGraph, DiskGraphNode, DiskGraphEdge
@@ -29,7 +30,8 @@ class SDGRoadmapVisualizer:
 
         # Parameters
         self.bubbles_color = [0.4235, 0.651, 0.7569, 1]
-        self.edges_color = [0.05, 0.05, 0.5, 1.]
+        self.edges_color = [0.05, 0.2, 0.8, 1.]
+        self.edges_width = 0.05
     
     
     def graphCallback(self, graph_msg):
@@ -58,7 +60,7 @@ class SDGRoadmapVisualizer:
             self.constructNodesVizMsg(nodes_pos, nodes_rad, self.bubbles_color, B_SCALE, height_offset=-B_SCALE[2]))
         self.edgesVizPublisher.publish(
             self.constructEdgesVizMsg(nodes_pos, graph_edges, nodes_ids_mapping,
-                                      self.edges_color, offset_height=0.2, width=0.06))
+                                      self.edges_color, offset_height=0.2, width=self.edges_width))
 
     def constructClearMsg(self):
         """Builds an empty RViz visualization message which clears all markers"""

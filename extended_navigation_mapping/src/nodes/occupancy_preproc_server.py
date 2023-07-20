@@ -3,10 +3,11 @@
 
 import rospy
 import time 
-
 import matplotlib.pyplot as plt
 
 from extended_mapping.map_processing import * 
+from extended_mapping.ros_conversions import * 
+
 from geometry_msgs.msg import Point
 from nav_msgs.msg import OccupancyGrid, MapMetaData
 from nav_msgs.srv import GetMap, GetMapResponse
@@ -39,7 +40,7 @@ class OccupancyPreprocessingServer:
     def processMap(self, raw_map_msg):
         #raw_map_msg = self.occ_map_service().map
         if self.input_map is None:
-            self.input_map = EnvironmentMap.initFromRosOccMsg(raw_map_msg)
+            self.input_map = envMapFromRosOccMsg(raw_map_msg)
         occ_data = ROSOccMapToArray(raw_map_msg)
 
         self.input_map.setResolution(raw_map_msg.info.resolution)
@@ -74,7 +75,7 @@ class OccupancyPreprocessingServer:
         response.map = OccupancyGrid()
         response.map.header = raw_map_msg.header
         response.map.info.resolution = self.processed_map.resolution
-        response.map.info.origin.position = Point(self.processed_map.origin[0], self.processed_map.origin[1], raw_map_msg.info.origin.position.z)
+        response.map.info.origin.position = Point(self.processed_map.origin[0], self.processed_map.origin[1], raw_map_msg.info.origin.position.z - 1)
         response.map.info.width = self.processed_map.dim[0]
         response.map.info.height = self.processed_map.dim[1]
         response.map.data = (100*self.processed_map.data.T).astype(np.int32).flatten()
@@ -93,7 +94,7 @@ class OccupancyPreprocessingServer:
         response.map = OccupancyGrid()
         response.map.header = raw_map_msg.header
         response.map.info.resolution = self.processed_map.resolution
-        response.map.info.origin.position = Point(self.processed_map.origin[0], self.processed_map.origin[1], raw_map_msg.info.origin.position.z)
+        response.map.info.origin.position = Point(self.processed_map.origin[0], self.processed_map.origin[1], raw_map_msg.info.origin.position.z - 1)
         response.map.info.width = self.processed_map.dim[0]
         response.map.info.height = self.processed_map.dim[1]
         response.map.data = (100*modified_data.T).astype(np.int32).flatten()

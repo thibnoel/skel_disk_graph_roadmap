@@ -2,7 +2,6 @@
 # -*- encoding: UTF-8 -*-
 
 import rospy
-#from sdg_roadmap.sdg_roadmap_utils import *
 from sdg_roadmap.skel_disk_graph_provider import *
 from extended_mapping.map_processing import EnvironmentMap
 from extended_mapping.ros_conversions import *

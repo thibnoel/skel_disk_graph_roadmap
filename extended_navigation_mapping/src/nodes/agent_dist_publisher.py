@@ -7,15 +7,16 @@ import time
 
 from std_msgs.msg import Float64
 from nav_msgs.msg import Odometry
-from ros_explore_mapping.srv import GetDistance
+from extended_navigation_mapping.srv import GetDistance
 from extended_mapping.map_processing import *
-from nav_utilities import agent_pos_listener
+from extended_mapping.ros_conversions import *
+from navigation_utils.agent_pos_listener import *
 
 class AgentDistPublisher:
     def __init__(self, dist_server, agent_frame, map_frame, agent_dist_topic):
         self.dist_serv_proxy = rospy.ServiceProxy(dist_server + "/get_distance", GetDistance)
         #self.odom_subscriber = rospy.Subscriber(odom_topic, Odometry, self.odomCallback)
-        self.agent_pos_listener = agent_pos_listener.AgentPosListener(
+        self.agent_pos_listener = AgentPosListener(
             map_frame, agent_frame)
         self.agent_dist_publisher = rospy.Publisher(agent_dist_topic, Float64, queue_size=1, latch=True)
 
@@ -23,7 +24,7 @@ class AgentDistPublisher:
         self.cached_dist_map = None
 
     def updateMap(self):
-        self.cached_dist_map = EnvironmentMap.initFromRosEnvGridMapMsg(self.dist_serv_proxy().distance)
+        self.cached_dist_map = envMapFromRosEnvGridMapMsg(self.dist_serv_proxy().distance)
         
     def publishDist(self):
         self.curr_pos = self.agent_pos_listener.get2DAgentPos()

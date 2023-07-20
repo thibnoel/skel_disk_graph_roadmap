@@ -96,7 +96,10 @@ class SDGExplorationServer:
         self.replan_pos.append(start)
         self.sdg_roadmap_server.updatePlanner(None)
         frontiers_paths = self.sdg_exploration_path_provider.getFrontiersPaths(start, envMapFromRosEnvGridMapMsg(self.occ_map_proxy().map))
-        best_id, best_path = self.sdg_exploration_path_provider.selectExplorationPath(frontiers_paths, self.path_cost_param)
+        if not len(frontiers_paths):
+            rospy.logwarn("No frontiers found")
+            return None
+        best_id, best_path = self.sdg_exploration_path_provider.selectExplorationPath(frontiers_paths)
         if best_path is None:
             return None
         self.current_target_pos = best_path['path'].waypoints[-1]

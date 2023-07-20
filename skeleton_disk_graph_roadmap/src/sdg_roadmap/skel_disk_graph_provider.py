@@ -400,7 +400,7 @@ class SDGExplorationPathProvider:
             self.normalizeCosts(frontiers_paths)
         return frontiers_paths
 
-    def selectExplorationPath(self, frontiers_paths_dict, cost_param_dict):
+    def selectExplorationPath(self, frontiers_paths_dict):
     # path_scores = {}
     # if not len(frontiers_paths_dict):
     #     return None

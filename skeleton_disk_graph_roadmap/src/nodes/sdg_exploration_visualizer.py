@@ -1,12 +1,11 @@
 import numpy as np
 import rospy
-from sdg_roadmap.sdg_roadmap_strategy import *
+#from sdg_roadmap.sdg_roadmap_strategy import *
 from map_processing.map_processing_utils import *
 
 from std_msgs.msg import Int32, Float32, Bool, Header
 from geometry_msgs.msg import Point, Pose, Quaternion
 from visualization_msgs.msg import Marker, MarkerArray
-
 from skeleton_disk_graph_roadmap.srv import GetDiskGraph
 
 from sdg_roadmap_server import SDGRoadmapServer
@@ -24,9 +23,9 @@ class SDGExplorationVisualizer:
         self.replan_pos_h = 1
 
         self.frontiers_paths_h = 1
-        self.frontiers_paths_valid_color = [0.8,0.4,0,0.5]
+        self.frontiers_paths_valid_color = [0.8,0.5,0,0.7]
         self.best_frontier_highlight_color = [0.9,0.2,0.2,0.8]
-        self.frontiers_paths_lwidth = 0.06
+        self.frontiers_paths_lwidth = 0.1
 
         self.past_plans_h = 1
         self.past_plans_color = np.array([0,225,25,126])/255
