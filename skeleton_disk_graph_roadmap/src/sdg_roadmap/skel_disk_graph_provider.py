@@ -1,7 +1,6 @@
 ### Skeleton Disk-Graph Provider : methods and class related to the construction of the roadmap graph
 
 from pqdict import pqdict
-from scipy.spatial.distance import cdist
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 import json
