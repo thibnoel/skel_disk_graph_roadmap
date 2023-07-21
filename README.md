@@ -104,10 +104,13 @@ The skeleton extraction process is split between two ROS nodes:
 
 A launch file [distance_mapping.launch](./extended_navigation_mapping/launch/distance_mapping.launch) is provided to run those 2 nodes using the example configuration.
 
-**Running the planning node**
+**Running the planning node**\
+(TODO) Detail usage of the `sdg_roadmap_server` node (config, provided topics and services)
+
 
 **Running the exploration node**\
-Requires a bit more setup (requires path follower and safety dist. publisher)
+Requires a bit more setup (requires safety dist. publisher and path following server)\
+(TODO) Detail usage of the `sdg_exploration_server` node (config, provided topics and services)
 
 ## Cite this work
 The code in this repo is an implementation of the method we present in the following paper (*currently under review*):
