@@ -6,7 +6,7 @@
         - Agent distance publisher
     -->
     <arg name="occupancy_preproc_config_file" default="$(find extended_navigation_mapping)/config/occupancy_preproc/occ_preproc_config.yaml"/>
-    <arg name="dist_server_config_file" default="$(find extended_navigation_mapping)/config/distance_mapping/dist_server_standalone_config.yaml"/>
+    <arg name="dist_server_config_file" default="$(find extended_navigation_mapping)/config/distance_mapping/dist_server_config.yaml"/>
     <arg name="agent_dist_publisher_config_file" default="$(find extended_navigation_mapping)/config/distance_mapping/agent_dist_publisher_config.yaml"/>
     
     <!-- Occupancy preprocessing -->

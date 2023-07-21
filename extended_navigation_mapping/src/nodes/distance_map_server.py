@@ -21,30 +21,25 @@ from extended_navigation_mapping.srv import GetDistance, GetDistanceResponse, Ge
 
 class DistanceMapServer:
     """ROS node to provide a distance map and its gradients, by processing an occupancy map"""
-    def __init__(self, occ_map_service, dist_map_topic, distance_offset, skeleton_flux_threshold):
+    def __init__(self, occ_map_service, distance_offset, skeleton_flux_threshold):
         # Parameters
-        #self.subsampling = subsampling
-        #self.obstacles_threshold = obstacles_threshold
-        #self.dil_erosion_dist = dil_erosion_dist
         self.distance_offset = distance_offset
         self.skeleton_flux_threshold = skeleton_flux_threshold
         self.occ_map_service = occ_map_service
-        self.dist_map_topic = dist_map_topic
 
         # Service proxies
         self.occ_map_service = rospy.ServiceProxy(self.occ_map_service, GetMap)
         # Publishers
-        self.dist_map_publisher = rospy.Publisher(self.dist_map_topic + "/distance", EnvironmentGridMap, queue_size=1, latch=True)
-        self.dist_as_occ_publisher = rospy.Publisher(self.dist_map_topic + "/dist_as_occ", OccupancyGrid, queue_size=1, latch=True)
-        self.dist_gradX_publisher = rospy.Publisher(self.dist_map_topic + "/grad_x", EnvironmentGridMap, queue_size=1, latch=True)
-        self.dist_gradY_publisher = rospy.Publisher(self.dist_map_topic + "/grad_y", EnvironmentGridMap, queue_size=1, latch=True)
-        self.skel_map_publisher = rospy.Publisher(self.dist_map_topic + "/skeleton", EnvironmentGridMap, queue_size=1, latch=True)
+        self.dist_map_publisher = rospy.Publisher("~distance", EnvironmentGridMap, queue_size=1, latch=True)
+        self.dist_as_occ_publisher = rospy.Publisher("~dist_as_occ", OccupancyGrid, queue_size=1, latch=True)
+        self.dist_gradX_publisher = rospy.Publisher("~grad_x", EnvironmentGridMap, queue_size=1, latch=True)
+        self.dist_gradY_publisher = rospy.Publisher("~grad_y", EnvironmentGridMap, queue_size=1, latch=True)
+        self.skel_map_publisher = rospy.Publisher("~skeleton", EnvironmentGridMap, queue_size=1, latch=True)
         # Distance service
         self.distance_service = rospy.Service("~get_distance", GetDistance, self.distanceServiceCallback)
         self.dist_skeleton_service = rospy.Service("~get_distance_skeleton", GetDistanceSkeleton, self.distanceSkeletonServiceCallback)
         # State
         self.input_map = None
-        #self.intermediary_map = None
         self.dist_map = None
         self.dist_occ_map = None
         self.dist_grad_x = None
@@ -62,47 +57,8 @@ class DistanceMapServer:
         self.input_map.setResolution(occ_grid_msg.info.resolution)
         self.input_map.setDim([occ_grid_msg.info.width, occ_grid_msg.info.height])
         self.input_map.setOrigin([occ_grid_msg.info.origin.position.x, occ_grid_msg.info.origin.position.y])
-        self.input_map.setData(occ_data)
-
-        #self.intermediary_map = self.input_map
-
-        ### Display
-        #plt.clf()
-        #self.intermediary_map.display()
-        #plt.pause(0.1)
-        
+        self.input_map.setData(occ_data)        
         rospy.loginfo("Occupancy map received")
-        #self.preprocessMap(dilation_erosion_dist=self.dil_erosion_dist, obst_occ_thresh=self.obstacles_threshold, subsampling=self.subsampling)
-
-        ### Display
-        #plt.clf()
-        #plt.subplot(121)
-        #self.dist_map.display(plt.cm.RdYlGn)
-        #plt.subplot(122)
-        #self.skeleton_map.display(plt.cm.gray)
-        #plt.pause(0.1)
-
-    '''
-    def preprocessMap(
-            self, 
-            subsampling=1, 
-            obst_occ_thresh=0.4,
-            dilation_erosion_dist=0
-        ):
-        """Filters the input occupancy map : subsampling + obstacles extraction + dilation and erosion"""
-        # Subsampling
-        subsampled_map = self.input_map.copy()
-        if subsampling != 1:
-            subsampled_map = subsampleMap(self.input_map, subsampling)
-        # Extracting obstacles
-        obst_map = subsampled_map.copy()
-        obst_map.setData(subsampled_map.data > obst_occ_thresh)
-        # Dilation + erosion
-        filtered_map = mapDilateErode(obst_map, dilation_erosion_dist)
-        self.intermediary_map = filtered_map
-
-        rospy.loginfo("Preprocessing finished")
-    '''
 
 
     def computeDistanceMaps(self):
@@ -187,14 +143,13 @@ if __name__ == "__main__":
 
     # Parameters
     occupancy_map_service = rospy.get_param("~occupancy_map_service", "rtabmap/get_map")
-    out_topics_name = rospy.get_param("~out_topics_name", "distance_map_server")
     distance_offset = rospy.get_param("~distance_offset", 0.)
     skeleton_flux_threshold = rospy.get_param("~skeleton_flux_threshold", -1e-3)
     update_rate = rospy.get_param("~update_rate", 5)
 
     r = rospy.Rate(update_rate)
     rospy.wait_for_service(occupancy_map_service)
-    dist_map_server = DistanceMapServer(occupancy_map_service, out_topics_name, distance_offset, skeleton_flux_threshold)
+    dist_map_server = DistanceMapServer(occupancy_map_service, distance_offset, skeleton_flux_threshold)
     
     
     while not rospy.is_shutdown():

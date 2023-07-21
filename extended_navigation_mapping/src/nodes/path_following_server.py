@@ -88,11 +88,8 @@ class FollowPathServer :
         self.agent_obst_dist = agent_dist.data
 
     def follow_path_callback(self, goal_path):
-        #FILTER_DIST = 1
-        
         waypoints = np.array([[p.pose.position.x, p.pose.position.y] for p in goal_path.path.poses])
         path = WaypointsPath(waypoints)
-        #path.filterOnDist(FILTER_DIST)
         success = False 
 
         while not success : 
