@@ -3,11 +3,9 @@
     Parameters files for :
         - Occupancy preprocessing
         - Distance server
-        - Agent distance publisher
     -->
     <arg name="occupancy_preproc_config_file" default="$(find extended_navigation_mapping)/config/occupancy_preproc/occ_preproc_config.yaml"/>
     <arg name="dist_server_config_file" default="$(find extended_navigation_mapping)/config/distance_mapping/dist_server_config.yaml"/>
-    <arg name="agent_dist_publisher_config_file" default="$(find extended_navigation_mapping)/config/distance_mapping/agent_dist_publisher_config.yaml"/>
     
     <!-- Occupancy preprocessing -->
     <node pkg="extended_navigation_mapping" type="occupancy_preproc_server.py" name="occupancy_preprocessing" output="screen">
@@ -17,8 +15,5 @@
     <node pkg="extended_navigation_mapping" type="distance_map_server.py" name="dist_server" output="screen">
         <rosparam file="$(arg dist_server_config_file)"/>
     </node>
-    <!-- Agent distance publisher -->
-    <node pkg="extended_navigation_mapping" type="agent_dist_publisher.py" name="agent_dist_pub" output="screen">
-        <rosparam file="$(arg agent_dist_publisher_config_file)"/>
-    </node>
+    
 </launch>
