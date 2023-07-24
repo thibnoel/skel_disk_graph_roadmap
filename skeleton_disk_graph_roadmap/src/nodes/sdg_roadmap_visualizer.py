@@ -15,6 +15,41 @@ from skeleton_disk_graph_roadmap.msg import DiskGraph, DiskGraphNode, DiskGraphE
 from skeleton_disk_graph_roadmap.srv import PlanPath, PlanPathResponse
 from visualization_msgs.msg import Marker, MarkerArray
 
+class RVizCirclesProvider:
+    def __init__(self, n_interp=200):
+        theta = np.arange(0,2*np.pi,2*np.pi/n_interp)
+        self.interp_points = np.array([np.cos(theta), np.sin(theta)]).T
+
+    def getCircMarker(self, marker_id, center, radius, height, color, line_width, lifetime=0):
+        points = [] # linked as 0-1, 2-3 etc
+        for k, p in enumerate(self.interp_points[:-1]):
+            points.append(Point(radius*p[0], radius*p[1], 0))
+            points.append(Point(radius*self.interp_points[k+1][0], radius*self.interp_points[k+1][1], 0))
+        points.append(Point(radius*self.interp_points[-1][0], radius*self.interp_points[-1][1], 0))
+        points.append(Point(radius*self.interp_points[0][0], radius*self.interp_points[0][1], 0))
+        
+        #markers_list = []
+        #marker_ind = 0
+        #for k,p in enumerate(self.interp_points[:-1]):
+        marker = Marker()
+        marker.header = Header()
+        marker.header.frame_id = "map"
+        marker.header.stamp = rospy.Time.now()
+        marker.id = marker_id
+        marker.type = 5 # Line list
+        marker.pose = Pose(Point(center[0],center[1],height), Quaternion(0,0,0,1))
+        marker.color.r = color[0]
+        marker.color.g = color[1]
+        marker.color.b = color[2]
+        marker.color.a = color[3]
+        marker.scale.x = line_width
+        marker.points = points
+        marker.lifetime = rospy.Duration(lifetime)
+        #markers_list.append(marker)
+        #marker_ind += 1
+        #return MarkerArray(markers_list)
+        return marker
+
 class SDGRoadmapVisualizer:
     """
     ROS wrapper class to visualize the Skeleton Disk-Graph Roadmap Planner in RViz
@@ -28,9 +63,12 @@ class SDGRoadmapVisualizer:
         self.nodesVizPublisher = rospy.Publisher("~nodes_viz", MarkerArray, queue_size=1, latch=True)
         self.edgesVizPublisher = rospy.Publisher("~edges_viz", MarkerArray, queue_size=1, latch=True)
 
+        self.circles_provider = RVizCirclesProvider()
+
         # Parameters
-        self.bubbles_color = [0.4235, 0.651, 0.7569, 1]
-        self.edges_color = [0.05, 0.2, 0.8, 1.]
+        #self.bubbles_color = [0.4235, 0.651, 0.7569, 1]
+        self.bubbles_color = [0.25, 0.55, 0.9, 0.5]
+        self.edges_color = [0.25, 0.55, 0.9, 1]
         self.edges_width = 0.05
     
     
@@ -57,7 +95,7 @@ class SDGRoadmapVisualizer:
         self.nodesVizPublisher.publish(self.constructClearMsg())
         self.edgesVizPublisher.publish(self.constructClearMsg())
         self.nodesVizPublisher.publish(
-            self.constructNodesVizMsg(nodes_pos, nodes_rad, self.bubbles_color, B_SCALE, height_offset=-B_SCALE[2]))
+            self.constructNodesVizMsg(nodes_pos, nodes_rad, self.bubbles_color, B_SCALE, height_offset=-B_SCALE[2]+0.2))
         self.edgesVizPublisher.publish(
             self.constructEdgesVizMsg(nodes_pos, graph_edges, nodes_ids_mapping,
                                       self.edges_color, offset_height=0.2, width=self.edges_width))
@@ -75,8 +113,9 @@ class SDGRoadmapVisualizer:
 
         #bubbles_rad = self.graph_nodes_rad
         #bubbles_pos = self.graph_nodes_pos
+        
         markers_list = []
-
+        '''
         for k, b in enumerate(bubbles_pos):
             bcolor = color
             bhoffset = height_offset
@@ -121,6 +160,12 @@ class SDGRoadmapVisualizer:
         marker_array = MarkerArray(markers_list)
         #color[3] = 1
         return marker_array
+        '''
+        for k, pos in enumerate(bubbles_pos) :
+            circle = self.circles_provider.getCircMarker(k, pos, bubbles_rad[k], height_offset, color, scale[2], lifetime=0)
+            markers_list.append(circle)
+        return MarkerArray(markers_list)
+        
 
     def constructEdgesVizMsg(self, bubbles_pos, graph_edges, nodes_ids_mapping, color, offset_height=.1, width=.06, id_offset=0):
         """Builds a RViz visualization message for the graph edges"""

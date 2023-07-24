@@ -9,6 +9,7 @@ from visualization_msgs.msg import Marker, MarkerArray
 from skeleton_disk_graph_roadmap.srv import GetDiskGraph
 
 from sdg_roadmap_server import SDGRoadmapServer
+from sdg_roadmap_visualizer import RVizCirclesProvider
 
 class SDGExplorationVisualizer:
     def __init__(self):
@@ -16,6 +17,7 @@ class SDGExplorationVisualizer:
         self.replan_pos_publisher = rospy.Publisher("~replan_pos_viz", MarkerArray, queue_size=1, latch=True)
         self.frontiers_plan_publisher = rospy.Publisher("~frontiers_plan_viz", MarkerArray, queue_size=1, latch=True)
         self.past_plans_publisher = rospy.Publisher("~past_plans_viz", MarkerArray, queue_size=1, latch=True)
+        self.curr_bubble_publisher = rospy.Publisher("~curr_bubble_viz", MarkerArray, queue_size=1, latch=True)
 
         # Parameters (handle with a dict)
         self.replan_pos_color = np.array([0,225,25,126])/255
@@ -30,6 +32,8 @@ class SDGExplorationVisualizer:
         self.past_plans_h = 1
         self.past_plans_color = np.array([0,225,25,126])/255
         self.past_plans_lwidth = 0.02
+
+        self.circles_provider = RVizCirclesProvider()
 
     def constructReplanPosVizMsg(self, replan_pos):
         """TODO"""
@@ -197,3 +201,21 @@ class SDGExplorationVisualizer:
 
     def publishPastPlanViz(self, past_plans_paths):
         self.past_plans_publisher.publish(self.constructPastPlanVizMsg(past_plans_paths))
+
+    def publishCurrBubbleViz(self, bubbles_pos, bubbles_rad):
+        marker_array_msg = MarkerArray()
+        
+        clear_marker = Marker()
+        clear_marker.id = 0
+        clear_marker.action = Marker.DELETEALL
+        marker_array_msg.markers.append(clear_marker)
+
+        lw = 0.1
+        m_array = []
+        for k, bpos in enumerate(bubbles_pos):
+            bubble_viz = self.circles_provider.getCircMarker(k, bpos, bubbles_rad[k], 1, (1,0,0,1), lw, lifetime=0)
+            m_array.append(bubble_viz)
+        
+        self.curr_bubble_publisher.publish(marker_array_msg)
+        self.curr_bubble_publisher.publish(MarkerArray(m_array))
+

@@ -133,6 +133,16 @@ class SDGExplorationServer:
                 cancel_msg = GoalID()
                 self.cancel_publisher.publish(cancel_msg)
 
+    def updateCurrBubbleViz(self):
+        curr_pos = self.sdg_roadmap_server.agent_pos_listener.get2DAgentPos()
+        curr_max_bub = self.sdg_roadmap_server.sdg_provider.biggestContainingBubble(curr_pos)
+        if curr_max_bub is not None:
+            neighb = [self.sdg_roadmap_server.sdg_provider.graph.nodes[i]["node_obj"] for i in list(self.sdg_roadmap_server.sdg_provider.graph.neighbors(curr_max_bub.id))]
+            b_pos = [n.pos for n in neighb] + [curr_max_bub.pos]
+            b_rad = [n.bubble_rad for n in neighb] + [curr_max_bub.bubble_rad]
+        
+            self.visualizer.publishCurrBubbleViz(b_pos, b_rad)
+
 
 if __name__ == "__main__":
     rospy.init_node("exploration_server")
@@ -177,4 +187,5 @@ if __name__ == "__main__":
         else:
             exploration_server.checkPathValidity()
             exploration_server.interruptOnInvalidTarget()
+        exploration_server.updateCurrBubbleViz()
     rospy.spin()
