@@ -61,7 +61,7 @@ We assume that you already have the lower-level components (sensors, robot inter
 **Running the skeleton extraction**\
 The skeleton extraction process is split between two ROS nodes:
 - the [occupancy preprocessing server](./extended_navigation_mapping/src/nodes/occupancy_preproc_server.py) which queries the source occupancy service and applies the smoothing process (dilation + erosion of the obstacles) described in the paper.
-    - **Example [config. file](./extended_navigation_mapping/config/occupancy_preproc/occ_preproc_config.yaml)**:
+    - Example [configuration file](./extended_navigation_mapping/config/occupancy_preproc/occ_preproc_config.yaml):
         ```yaml
         occupancy_map_service: "rtabmap/get_map" # Source occupancy service
         subsampling: 1.                          # Map subsampling (ratio)
@@ -79,7 +79,7 @@ The skeleton extraction process is split between two ROS nodes:
         /<node_name>/get_processed_binary_map       nav_msgs/GetMap
         ```
 - the [distance map server](./extended_navigation_mapping/src/nodes/distance_map_server.py) queries the occupancy preprocessing server and provides services to query the distance map or the skeleton map.
-    - **Example [config. file](./extended_navigation_mapping/config/distance_mapping/dist_server_config.yaml)**:
+    - Example [configuration file](./extended_navigation_mapping/config/distance_mapping/dist_server_config.yaml):
         ```yaml
         occupancy_map_service: "/occupancy_preprocessing/get_processed_binary_map" # Source occupancy service
         distance_offset: 0.2                # Distance boundary offset (meters)
@@ -105,8 +105,32 @@ The skeleton extraction process is split between two ROS nodes:
 A launch file [distance_mapping.launch](./extended_navigation_mapping/launch/distance_mapping.launch) is provided to run those 2 nodes using the example configuration.
 
 **Running the planning node**\
-(TODO) Detail usage of the `sdg_roadmap_server` node (config, provided topics and services)
+We now have all the pre-requisites needed to run the [SDG roadmap server node](./skeleton_disk_graph_roadmap/src/nodes/sdg_roadmap_server.py). This node provides services to update the roadmap and query paths between 2 configurations, but has no information of the agent localization in the environment.
+- Example [configuration file](./extended_navigation_mapping/config/distance_mapping/dist_server_config.yaml):
+    ```yaml
+    frame: "map"
+    agent_frame: "base_link"
+    dist_server_node_name: "dist_server"
 
+    sdg:
+        min_jbubbles_rad: 0.4       # Minimum radius for the junctions bubbles
+        min_pbubbles_rad: 0.25      # Minimum radius for the 2nd-pass bubbles
+        bubbles_dist_offset: 0.0    # Offset applied to the bubbles radii
+        knn_checks: 50              # Number of nearest-neighbors for n-n checks
+    ```
+- Published topics:
+    ``` 
+    /<node_name>/disk_graph             skeleton_disk_graph_roadmap/DiskGraph
+    /<node_name>/graph_size/edges       std_msgs/Int32
+    /<node_name>/graph_size/nodes       std_msgs/Int32
+    /<node_name>/planned_path           nav_msgs/Path
+    ```
+- Provided services:
+    ```
+    /<node_name>/get_disk_graph         skeleton_disk_graph_roadmap/GetDiskGraph
+    /<node_name>/plan_path              skeleton_disk_graph_roadmap/PlanPath
+    /<node_name>/update_planner         std_srvs/Empty
+    ```
 
 **Running the exploration node**\
 Requires a bit more setup (requires safety dist. publisher and path following server)\
