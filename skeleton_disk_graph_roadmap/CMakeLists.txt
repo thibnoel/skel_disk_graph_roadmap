@@ -37,6 +37,7 @@ add_service_files(
    FILES
    PlanPath.srv
    GetDiskGraph.srv
+   NavigateTo.srv
 )
 
 ## Generate added messages and services with any dependencies listed here
