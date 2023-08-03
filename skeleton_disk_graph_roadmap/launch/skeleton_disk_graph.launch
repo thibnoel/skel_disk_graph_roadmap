@@ -1,0 +1,5 @@
+<launch>
+    <node name="sdg_server" pkg="skeleton_disk_graph_roadmap" type="skel_disk_graph_node.py" output="screen">
+        <rosparam command="load" file="$(find skeleton_disk_graph_roadmap)/config/skel_disk_graph_config.yaml"/>
+    </node>
+</launch>

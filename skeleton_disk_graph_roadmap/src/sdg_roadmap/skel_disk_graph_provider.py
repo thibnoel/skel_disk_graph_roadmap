@@ -199,6 +199,21 @@ class SkeletonDiskGraphProvider(GraphProvider):
     ##############################
     ### PATH PLANNING
 
+    def biggestContainingBubble(self, world_pos):
+        closest_ind = self.getClosestNodes(world_pos, k=self.parameters_dict["knn_checks"])
+        closest = [self.graph.nodes[i]["node_obj"] for i in closest_ind]
+        curr_max_rad = 0
+        curr_max_ind = -1
+        brads = np.array([c.bubble_rad for c in closest])
+        for k, cl in enumerate(closest):
+            if np.linalg.norm(cl.pos - world_pos) < brads[k] and brads[k] > curr_max_rad:
+                curr_max_rad = brads[k]
+                curr_max_ind = k
+        if curr_max_ind == -1:
+            return None
+        else:
+            return closest[curr_max_ind]
+
     def isGraphReachable(self, world_pos):
         """Returns True if the given pos is reachable from one of the current graph bubbles, and the ID of the corresponding node"""
         closest_ind = self.getClosestNodes(world_pos, k=self.parameters_dict["knn_checks"])
@@ -400,14 +415,6 @@ class SDGExplorationPathProvider:
         return frontiers_paths
 
     def selectExplorationPath(self, frontiers_paths_dict):
-    # path_scores = {}
-    # if not len(frontiers_paths_dict):
-    #     return None
-    # for f_id in frontiers_paths_dict:
-    #     path_score = 0
-    #     for cost in frontiers_paths_dict[f_id]['costs']:
-    #         path_score += frontiers_paths_dict[f_id]['costs'][cost]*cost_param_dict[cost]
-    #     path_scores[f_id] = path_score
         path_scores = {f_id: frontiers_paths_dict[f_id]['aggregated_cost'] for f_id in frontiers_paths_dict}
         best_path_id = max(path_scores, key=path_scores.get)
         return best_path_id, frontiers_paths_dict[best_path_id]

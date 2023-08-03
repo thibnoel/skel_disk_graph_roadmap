@@ -54,6 +54,22 @@ def distanceGradFigure(map_preproc_config, distance_gradient_maps):
     distance_gradient_maps[0].display()
     plt.imshow(np.flip(grad_colors.transpose(1,0,2), axis=0), extent=distance_gradient_maps[0].getExtent(transpose=False))
 
+
+def segmentDiskGraph(sdg_provider, component_gen_dist):
+    unsegmented_ind = list(sdg_provider.graph.nodes).copy()
+    segmentation = {}
+    while len(unsegmented_ind):
+        bubbles = [sdg_provider.graph.nodes[ind]['node_obj'] for ind in unsegmented_ind]
+        max_rad_bubble = max(bubbles)
+        component = sdg_provider.getNodesInRange(max_rad_bubble.id, [0,component_gen_dist])
+        component = [ind for ind in component if ind in unsegmented_ind] + [max_rad_bubble.id]
+        #print(component)
+        segmentation[max_rad_bubble.id] = component
+        unsegmented_ind = list(set(unsegmented_ind) - set(component))
+        print(len(unsegmented_ind))
+    return segmentation
+
+
 if __name__ == "__main__":
     # Map file path and configuration
     maps_path_prefix = "/root/sdg_dev_catkin_ws/src/skel_disk_graph_roadmap/skeleton_disk_graph_roadmap/environments/"
@@ -113,7 +129,7 @@ if __name__ == "__main__":
     skeleton_map = subsampled_map.copy()
     skeleton_map.setData(thin_flux.astype(int)*(dist_map.data > 0.2))
 
-    SHOW_MAP_PREPROC = True
+    SHOW_MAP_PREPROC = False
     # Display map processing steps
     if SHOW_MAP_PREPROC:
         plt.figure()
@@ -159,7 +175,7 @@ if __name__ == "__main__":
     spline_path = simplified_path.getSmoothedSpline(dist_map)
 
     # Path planning visualization
-    SHOW_PATH_PLANNING = True
+    SHOW_PATH_PLANNING = False
     if SHOW_PATH_PLANNING:
         plt.figure()
         plt.subplot(121)
@@ -195,7 +211,7 @@ if __name__ == "__main__":
     frontiers_paths = exploration_provider.getFrontiersPaths(source_pos, env_map)
     best_id, best_path = exploration_provider.selectExplorationPath(frontiers_paths)
 
-    SHOW_FRONTIERS_EXTRACTIION = True
+    SHOW_FRONTIERS_EXTRACTIION = False
     if SHOW_FRONTIERS_EXTRACTIION:
         plt.figure()
         plt.title("Frontiers extraction")
@@ -205,5 +221,17 @@ if __name__ == "__main__":
             frontiers_paths[path_id]['path'].display(show_bubbles=False, color=length_cost_cmap(frontiers_paths[path_id]['costs']['energy_penalty']), lw=2)
         best_path['path'].display(show_bubbles=False, color='red', lw=4, label="Best explo. path")
         plt.legend()
+
+    # Segmentation tests
+    component_gen_dist = 30
+    cmap=plt.cm.tab10
+    seg = segmentDiskGraph(sdg_provider, component_gen_dist)
+    nodes_color_dict = {}
+    for k,s in enumerate(seg):
+        for ind in seg[s]:
+            nodes_color_dict[ind] = cmap(k%10)
+    sdg_provider.display(True, True, True, nodes_color_dict=nodes_color_dict, blw=3)
+    env_map.display(plt.cm.binary)
+
 
     plt.show()

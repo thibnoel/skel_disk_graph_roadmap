@@ -1,0 +1,50 @@
+frame: "map"
+agent_frame: "corrected_base_link"
+distance_mapping_server: "dist_server"
+occupancy_map_service: "/occupancy_preprocessing/get_processed_map"
+
+sdg:
+  # Roadmap construction
+  min_jbubbles_rad: 0.4
+  min_pbubbles_rad: 0.3
+  bubbles_dist_offset: 0.0
+  knn_checks: 40
+  # Navigation
+  navigation:
+    active: true
+    path_follower_server: "path_follower"
+    path_safety_distance: 0.1
+  # Exploration
+  exploration:
+    active: true
+    start_paused: true
+    strategy:
+      unkn_occ_range: [40,60]
+      frontiers_max_known_ratio: 0.6
+      search_dist_increment: 15
+      path_cost_parameters:
+        energy_penalty: -0.5
+        coverage_reward: 1
+  # Camera control
+  camera_control:
+    active: false
+  # Visualization
+  visualization:
+    active: true
+    roadmap:
+      edges:
+        color: [0.22,0.22,0.66,1]
+        linewidth: 0.06
+      nodes:
+        color: [0.22,0.22,0.66,1]
+        linewidth: 0.1
+    navigation:
+      path_nodes:
+        color: [1,0.5,0.2,1]
+        path_linewidth: 0.2
+        nodes_linewidth: 0.05
+    exploration:
+      path_selection:
+        linewidth: 0.2
+        cmap: "RdYlGn"
+        labels_size: 0.5

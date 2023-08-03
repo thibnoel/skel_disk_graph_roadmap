@@ -59,12 +59,13 @@ class FollowPathServer :
         k3 = params_dict["k3"]
         self.controller = pathFollowingController(v_des,w_max,k2,k3)
 
-        self.follow_path_server = actionlib.SimpleActionServer(params_dict["path_follower_action_server"], FollowPathAction, execute_cb=self.follow_path_callback, auto_start=False)
+        #self.follow_path_server = actionlib.SimpleActionServer(params_dict["path_follower_action_server"], FollowPathAction, execute_cb=self.follow_path_callback, auto_start=False)
+        self.follow_path_server = actionlib.SimpleActionServer("~follow_path", FollowPathAction, execute_cb=self.follow_path_callback, auto_start=False)
         self.follow_path_server.start()
 
         self.agent_dist_subscriber = rospy.Subscriber(params_dict["agent_dist_topic"], Float64, self.agentDistCallback)
         self.des_lin_vel_subscriber = rospy.Subscriber("~set_des_lin_vel", Float64, self.desiredLinVelCallback)
-        self.des_rot_vel_subscriber = rospy.Subscriber("~set_des_rot_vel", Float64, self.desiredRotVelCallback)
+        self.des_rot_vel_subscriber = rospy.Subscriber("~set_max_rot_vel", Float64, self.desiredRotVelCallback)
 
         self.vel_publisher = rospy.Publisher(params_dict["vel_topic"], Twist, queue_size=1)
         #self.dist_to_path_publisher = rospy.Publisher("~dist_to_path", Float64, queue_size=1)

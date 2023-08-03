@@ -52,7 +52,7 @@ class pathFollowingController:
             w0 = np.sign(w0)*self.max_ang_vel
         return [self.des_lin_vel, w0]
 
-    def computeAdjustedCommand(self, raw_command, dist_to_obst, robot_rad, safety_factor=0.5, ang_vel_trigger_ratio=0.9):
+    def computeAdjustedCommand(self, raw_command, dist_to_obst, robot_rad, safety_factor=0.5, ang_vel_trigger_ratio=0.99):
         max_turn_radius = max(0, safety_factor*dist_to_obst - robot_rad)
         updated_lin_vel = raw_command[0]
         if np.abs(raw_command[1]) > self.max_ang_vel*ang_vel_trigger_ratio:
