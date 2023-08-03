@@ -32,6 +32,8 @@ class BubblesPath(WaypointsPath):
     def getSubdivized(self, n_subdivisions, dist_map):
         """Returns the same path subdivized in the desired number of sudivisions"""
         subd_waypoints = []
+        if n_subdivisions < 5:
+            n_subdivisions = 5
         for k in range(n_subdivisions):
             t = 1.0*k/(n_subdivisions-1)
             subd_waypoints.append(self.getPosAt(t))

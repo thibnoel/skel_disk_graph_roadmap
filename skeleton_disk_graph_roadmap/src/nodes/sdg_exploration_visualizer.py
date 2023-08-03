@@ -202,7 +202,7 @@ class SDGExplorationVisualizer:
     def publishPastPlanViz(self, past_plans_paths):
         self.past_plans_publisher.publish(self.constructPastPlanVizMsg(past_plans_paths))
 
-    def publishCurrBubbleViz(self, bubbles_pos, bubbles_rad):
+    def publishCurrBubbleViz(self, bubbles_pos, bubbles_rad, bubbles_colors):
         marker_array_msg = MarkerArray()
         
         clear_marker = Marker()
@@ -213,7 +213,7 @@ class SDGExplorationVisualizer:
         lw = 0.1
         m_array = []
         for k, bpos in enumerate(bubbles_pos):
-            bubble_viz = self.circles_provider.getCircMarker(k, bpos, bubbles_rad[k], 1, (1,0,0,1), lw, lifetime=0)
+            bubble_viz = self.circles_provider.getCircMarker(k, bpos, bubbles_rad[k], 1, bubbles_colors[k], lw, lifetime=0)
             m_array.append(bubble_viz)
         
         self.curr_bubble_publisher.publish(marker_array_msg)

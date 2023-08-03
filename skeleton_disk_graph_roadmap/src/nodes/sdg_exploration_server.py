@@ -11,8 +11,8 @@ from sdg_roadmap.skel_disk_graph_provider import *
 
 from actionlib_msgs.msg import GoalStatusArray, GoalID
 from std_msgs.msg import Int32, Float32, Bool
-from std_srvs.srv import Empty
-from geometry_msgs.msg import Point
+from std_srvs.srv import Empty, EmptyResponse
+from geometry_msgs.msg import Point, Vector3
 from nav_msgs.srv import GetMap
 from extended_navigation_mapping.msg import FollowPathAction, FollowPathGoal, FollowPathActionResult
 from extended_navigation_mapping.srv import GetDistance
@@ -41,7 +41,8 @@ class SDGExplorationServer:
         # Service proxy
         self.occ_map_proxy = rospy.ServiceProxy(occ_map_service, GetMap)
         self.dist_map_proxy = rospy.ServiceProxy(dist_server_node_name + "/get_distance", GetDistance)
-        
+        # Service provider
+        self.pause_service = rospy.Service("~pause_resume", Empty, self.pauseCallback)
         # Skeleton Disk-Graph Roadmap
         self.sdg_roadmap_server = SDGRoadmapServer(dist_server_node_name, map_frame, agent_frame, sdg_tuning_param)
         self.sdg_exploration_path_provider = SDGExplorationPathProvider(
@@ -55,6 +56,7 @@ class SDGExplorationServer:
         self.safety_dist = safety_dist
         self.visualizer = SDGExplorationVisualizer()
         # State
+        self.paused = False
         self.is_following_path = False
         self.current_target_pos = None
         self.current_path = None
@@ -67,6 +69,16 @@ class SDGExplorationServer:
         rospy.logwarn("RESETTING PLANNER")
         self.sdg_roadmap_server.resetPlanner(sdg_tuning_param_dict)
     
+    def pauseCallback(self, msg):
+        if not self.paused:
+            cancel_msg = GoalID()
+            rospy.loginfo("Pausing exploration")
+            self.cancel_publisher.publish(cancel_msg)
+        if self.paused:
+            rospy.loginfo("Resuming exploration")
+        self.paused = not(self.paused)
+        return EmptyResponse()
+
     def pfResultCallback(self, pfResultMsg):
         rospy.loginfo(str(pfResultMsg))
         self.active_target = None
@@ -133,16 +145,6 @@ class SDGExplorationServer:
                 cancel_msg = GoalID()
                 self.cancel_publisher.publish(cancel_msg)
 
-    def updateCurrBubbleViz(self):
-        curr_pos = self.sdg_roadmap_server.agent_pos_listener.get2DAgentPos()
-        curr_max_bub = self.sdg_roadmap_server.sdg_provider.biggestContainingBubble(curr_pos)
-        if curr_max_bub is not None:
-            neighb = [self.sdg_roadmap_server.sdg_provider.graph.nodes[i]["node_obj"] for i in list(self.sdg_roadmap_server.sdg_provider.graph.neighbors(curr_max_bub.id))]
-            b_pos = [n.pos for n in neighb] + [curr_max_bub.pos]
-            b_rad = [n.bubble_rad for n in neighb] + [curr_max_bub.bubble_rad]
-        
-            self.visualizer.publishCurrBubbleViz(b_pos, b_rad)
-
 
 if __name__ == "__main__":
     rospy.init_node("exploration_server")
@@ -173,10 +175,12 @@ if __name__ == "__main__":
     rospy.wait_for_service(dist_server_node_name + "/get_distance")
     exploration_server.follow_path_client.wait_for_server()
 
+    cam_target_selector = SDGCamTargetSelector(exploration_server.sdg_roadmap_server.sdg_provider, exploration_server.sdg_roadmap_server.agent_pos_listener, "/cam_target")
+
     r = rospy.Rate(1)
     while not rospy.is_shutdown():
         r.sleep()
-        if not exploration_server.is_following_path:
+        if (not exploration_server.is_following_path) and (not exploration_server.paused):
             
             path = exploration_server.selectPath()
             if path is not None:
@@ -187,5 +191,7 @@ if __name__ == "__main__":
         else:
             exploration_server.checkPathValidity()
             exploration_server.interruptOnInvalidTarget()
+            cam_target_selector.updateTarget(envMapFromRosEnvGridMapMsg(exploration_server.occ_map_proxy().map), sdg_strategy_param_dict["unkn_occ_range"])
+            rospy.sleep(0.5)
         exploration_server.updateCurrBubbleViz()
     rospy.spin()
