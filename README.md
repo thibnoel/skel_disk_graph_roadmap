@@ -166,7 +166,7 @@ The choice of the mode is handled by a [configuration file](./skeleton_disk_grap
 
 #### Running the SDGRM in planning mode
  This node provides services to update the roadmap and query paths between 2 configurations, but has no information of the agent localization in the environment.
-- Example [configuration file](./extended_navigation_mapping/config/distance_mapping/dist_server_config.yaml):
+- Example [configuration file](./skeleton_disk_graph_roadmap/config/skel_disk_graph_config.yaml):
     ```yaml
     frame: "map"
     agent_frame: "base_link"
