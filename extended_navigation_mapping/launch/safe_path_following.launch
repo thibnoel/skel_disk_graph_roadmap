@@ -1,6 +1,6 @@
 <launch>
 
-    <arg name="agent_dist_publisher_config_file" default="$(find extended_navigation_mapping)/config/distance_mapping/agent_dist_publisher_config.yaml"/>
+    <arg name="agent_dist_publisher_config_file" default="$(find extended_navigation_mapping)/config/navigation/agent_dist_publisher_config.yaml"/>
     <arg name="path_follower_config_file" default="$(find extended_navigation_mapping)/config/navigation/path_following_config_sim.yaml"/>
 
     <!-- Agent distance publisher -->
@@ -9,6 +9,6 @@
     </node>
     <!-- Path following server -->
     <node pkg="extended_navigation_mapping" type="path_following_server.py" name="path_follower" output="screen">
-        <rosparam file="$(find extended_navigation_mapping)/config/navigation/path_following_config_sim.yaml"/>
+        <rosparam file="$(arg path_follower_config_file)"/>
     </node>
 </launch>
