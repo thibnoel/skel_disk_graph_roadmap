@@ -22,7 +22,6 @@ from skeleton_disk_graph_roadmap.msg import DiskGraph, DiskGraphNode, DiskGraphE
 from skeleton_disk_graph_roadmap.srv import PlanPath, PlanPathResponse, GetDiskGraph, GetDiskGraphResponse, NavigateTo, NavigateToResponse
 
 from sdg_ros_components import *
-from sdg_camera_controller import *
 from sdg_ros_visualization import *
 
 class SkelDiskGraphServer:
@@ -122,10 +121,6 @@ if __name__ == '__main__':
             "path_cost_parameters": rospy.get_param("~sdg/exploration/strategy/path_cost_parameters", "")
         }
     }
-    # Camera control parameters
-    sdg_cam_control_parameters = {
-        "active":  rospy.get_param("~sdg/camera_control/active", False)
-    }
     start_exploration_paused = rospy.get_param("~sdg/exploration/start_paused", True)
     # Visualization parameters
     sdg_viz_parameters = {
@@ -160,18 +155,12 @@ if __name__ == '__main__':
     if sdg_nav_parameters["active"]:
         nav_component = SDGNavigationComponent(sdg_server, planning_component, sdg_nav_parameters["path_follower_server"], sdg_nav_parameters["path_safety_distance"])
     if sdg_explo_parameters["active"]:
-        explo_component = SDGExplorationComponent(sdg_server, planning_component, nav_component, sdg_explo_parameters["strategy"], sdg_explo_parameters["occupancy_map_service"], start_paused=start_exploration_paused, visualizer=viz_component)
-    if sdg_cam_control_parameters["active"]:
-        cam_target_selector = SDGNeighborsCamTargetSelector(sdg_server.sdg_provider, sdg_server.agent_pos_listener, "/cam_target")
-        
+        explo_component = SDGExplorationComponent(sdg_server, planning_component, nav_component, sdg_explo_parameters["strategy"], sdg_explo_parameters["occupancy_map_service"], start_paused=start_exploration_paused, visualizer=viz_component)   
 
     while not rospy.is_shutdown():
         r.sleep()
         if sdg_nav_parameters["active"]:
             nav_component.update()
         if sdg_explo_parameters["active"]:
-            explo_component.update()
-        if sdg_cam_control_parameters["active"]:
-            cam_target_selector.updateTarget(envMapFromRosEnvGridMapMsg(explo_component.occupancy_map_service().map), sdg_explo_parameters["strategy"]["unkn_occ_range"])
-        
+            explo_component.update()    
     rospy.spin()

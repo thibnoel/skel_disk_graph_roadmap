@@ -415,14 +415,6 @@ class SDGExplorationPathProvider:
         return frontiers_paths
 
     def selectExplorationPath(self, frontiers_paths_dict):
-    # path_scores = {}
-    # if not len(frontiers_paths_dict):
-    #     return None
-    # for f_id in frontiers_paths_dict:
-    #     path_score = 0
-    #     for cost in frontiers_paths_dict[f_id]['costs']:
-    #         path_score += frontiers_paths_dict[f_id]['costs'][cost]*cost_param_dict[cost]
-    #     path_scores[f_id] = path_score
         path_scores = {f_id: frontiers_paths_dict[f_id]['aggregated_cost'] for f_id in frontiers_paths_dict}
         best_path_id = max(path_scores, key=path_scores.get)
         return best_path_id, frontiers_paths_dict[best_path_id]
