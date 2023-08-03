@@ -14,8 +14,8 @@ services: {
   path_follower_action_server: "~follow_path"
 }
 controller: {
-  desired_linear_vel: 0.1,
-  max_angular_vel: 0.1,
+  desired_linear_vel: 0.4,
+  max_angular_vel: 0.25,
   k2: 4,
   k3: 3,
   success_goal_dist: 0.25,
