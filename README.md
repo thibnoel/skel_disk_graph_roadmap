@@ -51,14 +51,14 @@ It demonstrates all the steps of the method (skeleton extraction, disk-graph con
 
 ---
 ### Running the Skeleton Disk-Graph Roadmap in ROS
-Our method can be used either for pure planning, i.e. to maintain a roadmap of the environement which can be updated at will and queried for paths when needed, or for exploration, using the disk-graph roadmap to autonomously select and follow navigation paths.
+Our method can be used either for pure planning, i.e. to maintain a roadmap of the environement which can be updated at will and queried for paths when needed, or for exploration, using the disk-graph roadmap to autonomously select and execute navigation paths.
 
 **Required setup**\
 We assume that you already have the lower-level components (sensors, robot interface...) and a SLAM system of your choice (in our case, we use [rtabmap](http://wiki.ros.org/rtabmap_ros)) integrated in ROS. Specifically, the requirements of the method are:
 - a link in the ROS `tf` tree between the `<map_frame>` and `<agent_frame>` frames (*see example config. files*)
 - a ROS node (usually the SLAM node) providing a **service** of type `nav_msgs/GetMap` serving the source occupancy map
 
-**Running the skeleton extraction**\
+#### Running the skeleton extraction
 The skeleton extraction process is split between two ROS nodes:
 - the [occupancy preprocessing server](./extended_navigation_mapping/src/nodes/occupancy_preproc_server.py) which queries the source occupancy service and applies the smoothing process (dilation + erosion of the obstacles) described in the paper.
     - Example [configuration file](./extended_navigation_mapping/config/occupancy_preproc/occ_preproc_config.yaml):
@@ -104,26 +104,88 @@ The skeleton extraction process is split between two ROS nodes:
 
 A launch file [distance_mapping.launch](./extended_navigation_mapping/launch/distance_mapping.launch) is provided to run those 2 nodes using the example configuration.
 
-**Running the planning node**\
-We now have all the pre-requisites needed to run the [SDG roadmap server node](./skeleton_disk_graph_roadmap/src/nodes/sdg_roadmap_server.py). This node provides services to update the roadmap and query paths between 2 configurations, but has no information of the agent localization in the environment.
+#### _Optionnal_ : running the navigation controller
+*__Note__: This part is only needed if you intend to use the path-following controller and/or the exploration node. If you only wish to use the SDGRM as a pure path-planner, you can skip directly to the [next section](#running-the-sdgrm-in-planning-mode).*
+
+The navigation is also managed by two separate ROS nodes:
+- the [agent distance publisher node](./extended_navigation_mapping/src/nodes/agent_dist_publisher.py) is a helper node which subscribes to the distance map and publishes the distance between the agent and the obstacles
+    - Example [configuration file](./extended_navigation_mapping/config/navigation/agent_dist_publisher_config.yaml):
+        ```yaml
+        dist_server_node_name: "dist_server" # Name of the distance mapping server
+        map_frame: "map"                     # Reference TF frames
+        agent_frame: "base_link" 
+        ```
+    - Published topics :
+        ```
+        /agent_dist                  std_msgs/Float64
+        ```
+- the [path following server](./extended_navigation_mapping/src/nodes/path_following_server.py) implements a standard non-linear path following algorithm, wrapped in a ROS node
+    - Example [configuration file](./extended_navigation_mapping/config/navigation/path_following_config_sim.yaml):
+        ```yaml
+        frames: {
+            agent_frame: "base_link",
+            map_frame: "map"
+        } # Reference frames
+        pub_topics: {
+            vel_topic: "/cmd_vel"
+        } # Output vel. command topic
+        sub_topics: {
+            agent_obst_dist: "/agent_dist"
+        } # Input agent dist. topic
+        controller: {
+            desired_linear_vel: 0.4,
+            max_angular_vel: 0.25,
+            k2: 4,
+            k3: 3,
+            success_goal_dist: 0.25,
+            agent_radius: 0.2
+        } # Control parameters
+        ```
+    - Published topics :
+        ```
+        /<pub_topics>/<vel_topic>   geometry_msgs/Twist
+        ```
+    - Subscribed topics:
+        ```
+        /<node_name>/set_des_lin_vel        std_msgs/Float64
+        /<node_name>/set_max_rot_vel        std_msgs/Float64
+        ```
+    - Provided services :
+        ```
+        /<node_name>/follow_path               extended_navigation_mapping/FollowPathAction
+        ```
+A launch file [safe_path_following.launch](./extended_navigation_mapping/launch/safe_path_following.launch) is provided to run those 2 nodes using the example configuration.
+
+---
+We now have all the pre-requisites needed to run the main [SDG roadmap node](./skeleton_disk_graph_roadmap/src/nodes/skel_disk_graph_node.py). The code is structured so that this node can be run in different modes:
+- pure planning: the SDG roadmap node only provides services to update the roadmap and query paths
+- planning + navigation: the node integrates with the navigation nodes to provide an additional navigation service, which plans a path and executes it when queried with a goal 
+- planning + navigation + exploration: the node uses the strategy described in the paper to autonomously select navigation targets and explore the environment
+
+The choice of the mode is handled by a [configuration file](./skeleton_disk_graph_roadmap/config/skel_disk_graph_config.yaml), allowing to enable or disable the sub-components of the node.
+
+#### Running the SDGRM in planning mode
+ This node provides services to update the roadmap and query paths between 2 configurations, but has no information of the agent localization in the environment.
 - Example [configuration file](./extended_navigation_mapping/config/distance_mapping/dist_server_config.yaml):
     ```yaml
     frame: "map"
     agent_frame: "base_link"
-    dist_server_node_name: "dist_server"
+    distance_mapping_server: "dist_server"
+    occupancy_map_service: "/occupancy_preprocessing/get_processed_map"
 
-    sdg:
+    sdg:   
+    # Roadmap construction
         min_jbubbles_rad: 0.4       # Minimum radius for the junctions bubbles
-        min_pbubbles_rad: 0.25      # Minimum radius for the 2nd-pass bubbles
+        min_pbubbles_rad: 0.3       # Minimum radius for the 2nd-pass bubbles
         bubbles_dist_offset: 0.0    # Offset applied to the bubbles radii
-        knn_checks: 50              # Number of nearest-neighbors for n-n checks
+        knn_checks: 40              # Number of nearest-neighbors for knn checks        
     ```
 - Published topics:
     ``` 
-    /<node_name>/disk_graph             skeleton_disk_graph_roadmap/DiskGraph
-    /<node_name>/graph_size/edges       std_msgs/Int32
-    /<node_name>/graph_size/nodes       std_msgs/Int32
-    /<node_name>/planned_path           nav_msgs/Path
+    /<node_name>/disk_graph                     skeleton_disk_graph_roadmap/DiskGraph
+    /<node_name>/logging/graph_size/edges       std_msgs/Int32
+    /<node_name>/logging/graph_size/nodes       std_msgs/Int32
+    /<node_name>/planned_path                   nav_msgs/Path
     ```
 - Provided services:
     ```
@@ -132,9 +194,14 @@ We now have all the pre-requisites needed to run the [SDG roadmap server node](.
     /<node_name>/update_planner         std_srvs/Empty
     ```
 
-**Running the exploration node**\
-Requires a bit more setup (requires safety dist. publisher and path following server)\
-(TODO) Detail usage of the `sdg_exploration_server` node (config, provided topics and services)
+#### Running the SDGRM in navigation mode
+(TODO) detail usage in the planning+navigation case
+
+#### Running the SDGRM in exploration mode
+(TODO) detail usage in the exploration case
+
+#### RViz visualization
+(TODO) Document the visualizer config.
 
 ## Cite this work
 The code in this repo is an implementation of the method we present in the following paper (*currently under review*):
