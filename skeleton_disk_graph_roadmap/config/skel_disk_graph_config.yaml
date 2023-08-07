@@ -25,9 +25,6 @@ sdg:
       path_cost_parameters:
         energy_penalty: -0.5
         coverage_reward: 1
-  # Camera control
-  camera_control:
-    active: false
   # Visualization
   visualization:
     active: true
