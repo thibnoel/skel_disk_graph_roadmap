@@ -165,7 +165,7 @@ We now have all the pre-requisites needed to run the main [SDG roadmap node](./s
 The choice of the mode is handled by a [configuration file](./skeleton_disk_graph_roadmap/config/skel_disk_graph_config.yaml), allowing to enable or disable the sub-components of the node.
 
 #### Running the SDGRM in planning mode
- This node provides services to update the roadmap and query paths between 2 configurations, but has no information of the agent localization in the environment.
+ In this mode, the SDGRM node provides services to update the roadmap and query paths between 2 configurations, but uses no localization information.
 - Example [configuration file](./skeleton_disk_graph_roadmap/config/skel_disk_graph_config.yaml):
     ```yaml
     frame: "map"
@@ -174,7 +174,7 @@ The choice of the mode is handled by a [configuration file](./skeleton_disk_grap
     occupancy_map_service: "/occupancy_preprocessing/get_processed_map"
 
     sdg:   
-    # Roadmap construction
+        # Roadmap construction
         min_jbubbles_rad: 0.4       # Minimum radius for the junctions bubbles
         min_pbubbles_rad: 0.3       # Minimum radius for the 2nd-pass bubbles
         bubbles_dist_offset: 0.0    # Offset applied to the bubbles radii
@@ -195,11 +195,50 @@ The choice of the mode is handled by a [configuration file](./skeleton_disk_grap
     ```
 
 #### Running the SDGRM in navigation mode
-(TODO) detail usage in the planning+navigation case
+In navigation mode, the SDGRM node expects the path-following server and agent distance publisher nodes to also be running. The configuration file can simply be extended accordingly to specify their names and navigation parameters, then enabling the SDGRM planner to also call the path following server to execute the planned paths.
+- Example [configuration file](./skeleton_disk_graph_roadmap/config/skel_disk_graph_config.yaml):
+    ```yaml
+    sdg:   
+        # Roadmap construction
+        ...
+        # Navigation
+        navigation:
+            active: true    # Enables or disables navigation
+            path_follower_server: "path_follower"   # Name of the path following server node
+            path_safety_distance: 0.1    # Safety distance threshold: navigation is interrupted is the path-to-obstacles distance violates this threshold     
+    ```
+- Provided services:
+    ```
+    /<node_name>/navigate_to         skeleton_disk_graph_roadmap/NavigateTo
+    /<node_name>/interrupt_nav       std_srvs/Empty
+    ```
 
 #### Running the SDGRM in exploration mode
-(TODO) detail usage in the exploration case
-
+Finally, we also have all the necessary components to run the SDGRM node in autonomous exploration mode. This is done through an additional extension of the configuration file:
+- Example [configuration file](./skeleton_disk_graph_roadmap/config/skel_disk_graph_config.yaml):
+    ```yaml
+    sdg:   
+        # Roadmap construction
+        ...
+        # Navigation
+        ...
+        # Exploration
+        exploration:
+            active: true        # Enables or disables exploration
+            start_paused: true  # Wait for service call at start 
+            strategy:
+                unkn_occ_range: [40,60] # Occupancy values range for a cell to be considered unknown
+                frontiers_max_known_ratio: 0.6 # Maximum relative surface of known space covered by a bubble to be considered as a frontier candidate
+                search_dist_increment: 15 # Distance increment for the local frontiers search along the graph edges
+                path_cost_parameters:  # Penalty and reward coefficients for the exploration paths evaluation
+                    energy_penalty: -0.5
+                    coverage_reward: 1
+    ```
+- Provided services:
+    ```
+    /<node_name>/exploration/preview_path         std_srvs/Empty
+    /<node_name>/exploration/pause_resume         std_srvs/Empty
+    ```
 #### RViz visualization
 (TODO) Document the visualizer config.
 
