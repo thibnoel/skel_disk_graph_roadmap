@@ -114,7 +114,7 @@ if __name__ == "__main__":
     skeleton_map = subsampled_map.copy()
     skeleton_map.setData(thin_flux.astype(int)*(dist_map.data > 0.2))
 
-    SHOW_MAP_PREPROC = False
+    SHOW_MAP_PREPROC = True
     # Display map processing steps
     if SHOW_MAP_PREPROC:
         plt.figure()
@@ -160,7 +160,7 @@ if __name__ == "__main__":
     spline_path = simplified_path.getSmoothedSpline(dist_map)
 
     # Path planning visualization
-    SHOW_PATH_PLANNING = False
+    SHOW_PATH_PLANNING = True
     if SHOW_PATH_PLANNING:
         plt.figure()
         plt.subplot(121)
@@ -196,7 +196,7 @@ if __name__ == "__main__":
     frontiers_paths = exploration_provider.getFrontiersPaths(source_pos, env_map)
     best_id, best_path = exploration_provider.selectExplorationPath(frontiers_paths)
 
-    SHOW_FRONTIERS_EXTRACTIION = False
+    SHOW_FRONTIERS_EXTRACTIION = True
     if SHOW_FRONTIERS_EXTRACTIION:
         plt.figure()
         plt.title("Frontiers extraction")
