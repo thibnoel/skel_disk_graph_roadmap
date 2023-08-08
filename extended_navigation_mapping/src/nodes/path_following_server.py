@@ -117,7 +117,12 @@ class FollowPathServer :
             self.last_command_vel = command[0]
             self.last_command_ang = command[1]
             self.vel_publisher.publish(vel_command)
-        
+
+            feedback = FollowPathFeedback()
+            path_witness_point, wp_t = path.getNearestPoint(agent_pos)
+            feedback.progress = wp_t
+            self.follow_path_server.publish_feedback(feedback)
+            
         vel_command = Twist()
         self.vel_publisher.publish(vel_command)
         if success :
