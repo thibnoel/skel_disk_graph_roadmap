@@ -158,9 +158,9 @@ A launch file [safe_path_following.launch](./extended_navigation_mapping/launch/
 
 ---
 We now have all the pre-requisites needed to run the main [SDG roadmap node](./skeleton_disk_graph_roadmap/src/nodes/skel_disk_graph_node.py). The code is structured so that this node can be run in different modes:
-- pure planning: the SDG roadmap node only provides services to update the roadmap and query paths
-- planning + navigation: the node integrates with the navigation nodes to provide an additional navigation service, which plans a path and executes it when queried with a goal 
-- planning + navigation + exploration: the node uses the strategy described in the paper to autonomously select navigation targets and explore the environment
+- [pure planning](#running-the-sdgrm-in-planning-mode): the SDG roadmap node only provides services to update the roadmap and query paths
+- [planning + navigation](#running-the-sdgrm-in-navigation-mode): the node integrates with the navigation nodes to provide an additional navigation service, which plans a path and executes it when queried with a goal 
+- [planning + navigation + exploration](#running-the-sdgrm-in-exploration-mode): the node uses the strategy described in the paper to autonomously select navigation targets and explore the environment
 
 The choice of the mode is handled by a [configuration file](./skeleton_disk_graph_roadmap/config/skel_disk_graph_config.yaml), allowing to enable or disable the sub-components of the node.
 
@@ -240,7 +240,7 @@ Finally, we also have all the necessary components to run the SDGRM node in auto
     /<node_name>/exploration/pause_resume         std_srvs/Empty
     ```
 #### RViz visualization
-(TODO) Document the visualizer config.
+In order to better monitor the behavior of the planner, particularly during exploration, we also provide a [visualization component](./skeleton_disk_graph_roadmap/src/nodes/sdg_ros_visualization.py) relying on [RViz](http://wiki.ros.org/rviz); more precisely, the SDGRM node publishes RViz markers corresponding to the current state of the roadmap and/or of the exploration. Those markers can be configured similarly to the others parameters of the roadmap (see the [example configuration file](./skeleton_disk_graph_roadmap/config/skel_disk_graph_config.yaml)).
 
 ## Cite this work
 The code in this repo is an implementation of the method we present in the following paper (*currently under review*):
